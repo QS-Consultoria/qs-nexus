@@ -1,103 +1,89 @@
 # Índice da Documentação
 
-Esta pasta contém toda a documentação do projeto de curadoria de documentos jurídicos.
+Esta pasta contém toda a documentação do sistema RAG LegalWise.
 
 ## Documentos Principais
 
 ### [README.md](./README.md)
-Visão geral completa do projeto, incluindo:
-- Objetivo do projeto
-- Estrutura do projeto
-- Pipeline de processamento completo
-- Arquivos de dados
-- Lições aprendidas
-- Próximos passos
+Visão geral completa do sistema atual:
+- Objetivo e arquitetura
+- Pipeline de processamento
+- Estrutura do banco de dados
+- Características principais
+
+### [SETUP.md](./SETUP.md)
+Guia completo de configuração:
+- Setup do Neon
+- Configuração de variáveis de ambiente
+- Execução de migrations
+- Troubleshooting
 
 ### [QUICK_START.md](./QUICK_START.md)
-Guia rápido para começar a usar o sistema:
-- Pré-requisitos
-- Execução passo a passo
-- Troubleshooting básico
-- Dicas práticas
+Guia rápido para começar:
+- Instalação
+- Configuração básica
+- Pipeline completo
+- Utilitários
 
 ## Documentação Técnica
 
 ### [ARQUITETURA.md](./ARQUITETURA.md)
-Documentação arquitetural detalhada:
+Arquitetura detalhada do sistema:
 - Fluxo de dados
-- Componentes do sistema
+- Componentes e serviços
 - Estrutura de dados
 - Decisões de design
-- Limitações atuais
-- Melhorias planejadas
-
-### [SCRIPTS.md](./SCRIPTS.md)
-Documentação detalhada de cada script:
-- Descrição de cada script
-- Parâmetros e configuração
-- Exemplos de uso
-- Tratamento de erros
-- Performance
 
 ### [DADOS.md](./DADOS.md)
-Estrutura e formato dos dados:
-- Schemas JSONL
-- Formato CSV
-- Estrutura do banco de dados
-- Estatísticas típicas
-- Validação de dados
-- Utilitários de migração
+Estrutura de dados:
+- Schema do banco de dados
+- Enums e tipos
+- Operações de busca
+- Validação
+
+### [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)
+Resumo da implementação:
+- O que foi implementado
+- Características
+- Próximos passos
+
+## Documentação Histórica
+
+### [prompt.md](./prompt.md)
+Prompt original do projeto (mantido para referência histórica).
 
 ## Como Usar Esta Documentação
 
 1. **Começando:** Leia [QUICK_START.md](./QUICK_START.md)
-2. **Entendendo o sistema:** Leia [README.md](./README.md)
-3. **Profundidade técnica:** Consulte [ARQUITETURA.md](./ARQUITETURA.md)
-4. **Usando scripts:** Veja [SCRIPTS.md](./SCRIPTS.md)
-5. **Trabalhando com dados:** Consulte [DADOS.md](./DADOS.md)
+2. **Configurando:** Siga [SETUP.md](./SETUP.md)
+3. **Entendendo:** Leia [README.md](./README.md)
+4. **Profundidade técnica:** Consulte [ARQUITETURA.md](./ARQUITETURA.md) e [DADOS.md](./DADOS.md)
 
 ## Estrutura do Projeto
 
 ```
-lw-rag-system/              # Projeto principal
+lw-rag-system/
 ├── docs/                    # Esta pasta
 │   ├── INDEX.md            # Este arquivo
 │   ├── README.md           # Visão geral
+│   ├── SETUP.md            # Setup completo
 │   ├── QUICK_START.md      # Guia rápido
 │   ├── ARQUITETURA.md      # Arquitetura
-│   ├── SCRIPTS.md          # Scripts
-│   └── DADOS.md            # Estrutura de dados
-├── extract_docs.py         # Scripts de processamento
-├── filter_docs.py
-├── classify_docs_v3.py
-├── convert_to_csv_v2.py
-├── build_datasets.py
-├── create_embeddings.py
-└── import_embeddings_supabase.py
-
-list-docx/                  # Pasta separada com documentos DOCX
-├── 01. Trabalhista/        # Documentos por área de direito
-├── 04. Tributário/
-├── 08. Previdenciário/
-└── [outras pastas...]
+│   ├── DADOS.md            # Estrutura de dados
+│   ├── IMPLEMENTATION_SUMMARY.md
+│   └── prompt.md           # Histórico
+├── lib/                     # Código TypeScript
+│   ├── db/                 # Banco de dados
+│   ├── services/           # Serviços
+│   └── types/              # Tipos
+├── scripts/                 # Scripts do pipeline
+├── package.json
+└── README.md               # README principal (raiz)
 ```
-
-**Localização dos documentos DOCX:**
-- `/Users/william/development/legalwise/rag-system/list-docx`
-
-## Contribuindo
-
-Ao adicionar novos scripts ou modificar o pipeline:
-
-1. Atualize [SCRIPTS.md](./SCRIPTS.md) com a documentação do novo script
-2. Atualize [ARQUITETURA.md](./ARQUITETURA.md) se houver mudanças arquiteturais
-3. Atualize [DADOS.md](./DADOS.md) se houver mudanças na estrutura de dados
-4. Atualize [README.md](./README.md) se necessário
 
 ## Links Úteis
 
 - [AI SDK Documentation](https://ai-sdk.dev/docs/ai-sdk-core/embeddings)
-- [OpenAI Embeddings API](https://platform.openai.com/docs/guides/embeddings)
-- [pgvector Documentation](https://github.com/pgvector/pgvector)
 - [Drizzle ORM](https://orm.drizzle.team/)
-
+- [pgvector Documentation](https://github.com/pgvector/pgvector)
+- [Neon Documentation](https://neon.tech/docs)

@@ -1,252 +1,165 @@
-# Arquitetura do Sistema de Curadoria
+# Arquitetura do Sistema RAG
 
 ## Visão Geral
 
-O sistema de curadoria processa documentos jurídicos DOCX através de um pipeline de ETL (Extract, Transform, Load) que prepara os dados para uso em um sistema RAG.
+O sistema RAG processa documentos jurídicos DOCX através de um pipeline completo que converte para Markdown, classifica com metadados estruturados e gera embeddings para busca vetorial.
 
 ## Fluxo de Dados
 
 ```
-DOCX Files
+DOCX Files (../list-docx)
     ↓
-[1] extract_docs.py
+[1] npm run rag:process
     ↓
-docs_raw.jsonl (texto bruto)
+Markdown + Tracking (document_files)
     ↓
-[2] filter_docs.py
+[2] npm run rag:filter
     ↓
-docs_filtered.jsonl (texto limpo)
+Documentos Filtrados (status: completed/rejected)
     ↓
-[3] classify_docs_v3.py
+[3] npm run rag:classify
     ↓
-classification_results.jsonl (metadados)
+Templates (templates table)
     ↓
-[4] convert_to_csv_v2.py
+[4] npm run rag:chunk
     ↓
-curadoria.csv
+Chunks Preparados
     ↓
-[5] selecao_rag.csv (edição manual)
+[5] npm run rag:embed
     ↓
-[6] build_datasets.py
+Embeddings Gerados
     ↓
-dataset_gold.csv | dataset_silver.csv | dataset_curado.csv
+[6] npm run rag:store
     ↓
-[7] create_embeddings.py
-    ↓
-embeddings.jsonl
-    ↓
-[8] import_embeddings_supabase.py
-    ↓
-PostgreSQL (Supabase) - Tabela lw_embeddings
+Neon PostgreSQL (template_chunks com embeddings)
 ```
 
 ## Componentes
 
-### 1. Extração (Extract)
+### 1. File Tracker (`lib/services/file-tracker.ts`)
 
-**Script:** `extract_docs.py`
+Sistema de tracking que evita reprocessamento:
 
-- **Input:** Arquivos DOCX em `/Users/william/development/legalwise/rag-system/list-docx`
-- **Output:** `docs_raw.jsonl`
-- **Processo:**
-  - Varredura recursiva de diretórios
-  - Leitura de arquivos DOCX usando `python-docx`
-  - Extração de texto de parágrafos
-  - Contagem de palavras
-  - Serialização em JSONL
+- **Hash SHA256**: Detecta mudanças em arquivos
+- **Status**: pending, processing, completed, failed, rejected
+- **Caminhos Relativos**: Portável entre máquinas
+- **Rejeição Permanente**: Arquivos rejeitados nunca são reprocessados
 
-### 2. Filtragem (Transform)
+### 2. DOCX Converter (`lib/services/docx-converter.ts`)
 
-**Script:** `filter_docs.py`
+- **Conversão**: DOCX → Markdown usando `mammoth`
+- **Preservação**: Mantém estrutura (títulos, listas, parágrafos)
+- **Limpeza**: Normaliza formatação
 
-- **Input:** `docs_raw.jsonl`
-- **Output:** `docs_filtered.jsonl`
-- **Processo:**
-  - Filtragem por tamanho (300-25.000 palavras)
-  - Remoção de outliers
-  - Preservação de metadados
+### 3. Classifier (`lib/services/classifier.ts`)
 
-### 3. Classificação (Transform)
+- **Modelo**: GPT-4o-mini via AI SDK
+- **Output**: TemplateDocument completo
+- **Metadados**: docType, area, jurisdiction, complexity, tags, summary, qualityScore
+- **Classificação Automática**: GOLD (>60) e SILVER (56-60)
 
-**Script:** `classify_docs_v3.py`
+### 4. Chunker (`lib/services/chunker.ts`)
 
-- **Input:** `docs_filtered.jsonl`
-- **Output:** `classification_results.jsonl`
-- **Processo:**
-  - Chamadas à API OpenAI (GPT-4o-mini)
-  - Classificação semântica de documentos
-  - Extração de metadados estruturados
-  - Suporte a retomada de processamento
+- **Estratégia Primária**: Chunking por seções Markdown (H1, H2)
+- **Fallback**: Chunking por parágrafos respeitando tokens
+- **Contexto**: Preserva título da seção com conteúdo
+- **Role Inference**: Identifica papel da seção (fatos, fundamentacao, pedido, etc.)
 
-**Metadados Extraídos:**
-- Tipo de documento
-- Área de direito
-- Tipo (modelo vs. peça real)
-- Qualidade (clareza, estrutura)
-- Nível de risco
-- Resumo
+### 5. Embedding Generator (`lib/services/embedding-generator.ts`)
 
-### 4. Conversão para CSV
+- **Modelo**: text-embedding-3-small (1536 dimensões)
+- **Batch Processing**: 64 chunks por requisição
+- **Rate Limiting**: Tratamento automático de rate limits
+- **Custo**: $0.02 por 1M tokens
 
-**Script:** `convert_to_csv_v2.py`
+### 6. Store Embeddings (`lib/services/store-embeddings.ts`)
 
-- **Input:** `classification_results.jsonl`
-- **Output:** `curadoria.csv`
-- **Processo:**
-  - Conversão de JSONL para CSV
-  - Normalização de campos
-  - Preparação para análise manual
-
-### 5. Seleção Manual
-
-**Arquivo:** `selecao_rag.csv`
-
-- Processo manual de curadoria
-- Adição de notas e flags de seleção
-- Classificação GOLD/SILVER
-
-### 6. Geração de Datasets
-
-**Script:** `build_datasets.py`
-
-- **Input:** `selecao_rag.csv`
-- **Output:** `dataset_gold.csv`, `dataset_silver.csv`, `dataset_curado.csv`
-- **Processo:**
-  - Classificação automática por nota
-  - Separação em tiers de qualidade
-  - Geração de múltiplos datasets
-
-### 7. Geração de Embeddings
-
-**Script:** `create_embeddings.py`
-
-- **Input:** `docs_filtered.jsonl` (ou dataset selecionado)
-- **Output:** `embeddings.jsonl`
-- **Processo:**
-  - Chunking de documentos (4.000 caracteres)
-  - Geração de embeddings via OpenAI
-  - Batch processing (64 chunks/requisição)
-  - Modelo: `text-embedding-3-small` (1536 dimensões)
-
-### 8. Importação para Banco
-
-**Script:** `import_embeddings_supabase.py`
-
-- **Input:** `embeddings.jsonl`
-- **Output:** Tabela PostgreSQL
-- **Processo:**
-  - Conexão com Supabase
-  - Criação de tabela com pgvector
-  - Importação em batches
-  - Conversão de arrays para formato vector
+- **Armazenamento**: Templates e chunks no Neon
+- **Batch Insert**: 500 registros por batch
+- **Transações**: Garantia de consistência
 
 ## Estrutura de Dados
 
-### JSONL (docs_raw.jsonl, docs_filtered.jsonl)
-```json
+### TemplateDocument
+
+```typescript
 {
-  "id": "nome_arquivo.docx",
-  "path": "/caminho/completo/arquivo.docx",
-  "words": 1234,
-  "text": "conteúdo extraído..."
+  id?: string;
+  title: string;
+  docType: 'peticao_inicial' | 'contestacao' | 'recurso' | ...;
+  area: 'civil' | 'trabalhista' | 'tributario' | ...;
+  jurisdiction: string; // 'BR', 'TRT1', 'TJSP', etc.
+  complexity: 'simples' | 'medio' | 'complexo';
+  tags: string[];
+  summary: string; // Resumo otimizado para embedding
+  markdown: string; // Conteúdo completo em Markdown
+  metadata?: Record<string, any>;
+  qualityScore?: number; // 0-100
+  isGold: boolean;
+  isSilver: boolean;
 }
 ```
 
-### JSONL (classification_results.jsonl)
-```json
-{
-  "id": "nome_arquivo.docx",
-  "tipo_documento": "peticao_inicial",
-  "area_direito": "civil",
-  "modelo_ou_peca_real": "modelo",
-  "qualidade_clareza": 8,
-  "qualidade_estrutura": 7,
-  "risco": 2,
-  "resumo": "Resumo do documento..."
-}
-```
+### Banco de Dados
 
-### JSONL (embeddings.jsonl)
-```json
-{
-  "doc_id": "nome_arquivo.docx",
-  "chunk_index": 0,
-  "embedding": [0.123, -0.456, ...]
-}
-```
+#### Tabela: `document_files`
 
-### CSV (curadoria.csv, selecao_rag.csv)
-```csv
-documento_id,tipo_documento,area_direito,modelo_ou_peca_real,qualidade_clareza,qualidade_estrutura,risco,resumo,NOTA,RAG GOLD,RAG SILVER
-```
+- Tracking de arquivos processados
+- Caminho relativo, hash, status, palavras
 
-### Tabela PostgreSQL (lw_embeddings)
-```sql
-CREATE TABLE lw_embeddings (
-    doc_id      text,
-    chunk_index integer,
-    content     text,
-    embedding   vector(1536),
-    created_at  timestamptz DEFAULT now()
-);
-```
+#### Tabela: `templates`
+
+- Documentos processados completos
+- TemplateDocument com todos os metadados
+- Relacionamento com `document_files`
+
+#### Tabela: `template_chunks`
+
+- Chunks individuais com embeddings
+- Seção, role, conteúdo Markdown
+- Embedding vector(1536) com índice HNSW
 
 ## Decisões de Design
 
-### Por que JSONL?
-- Formato eficiente para processamento linha por linha
-- Permite processamento incremental
-- Não requer carregar todo o dataset em memória
+### Por que Markdown?
 
-### Por que Chunking?
-- Limites de contexto da API OpenAI
-- Melhor granularidade para busca vetorial
-- Permite recuperação de trechos específicos
+- Preserva estrutura do documento
+- Formato canônico para o agente de IA
+- Facilita chunking por seções
 
-### Por que pgvector?
-- Extensão PostgreSQL nativa para busca vetorial
-- Suporte a operadores de similaridade (cosine, L2, inner product)
-- Integração natural com PostgreSQL
+### Por que Caminhos Relativos?
 
-### Por que Batch Processing?
-- Redução de custos de API
-- Melhor throughput
-- Tratamento de rate limits
+- Portabilidade entre máquinas
+- Não depende de caminhos absolutos
+- Facilita colaboração
 
-## Limitações Atuais
+### Por que Tracking no Banco?
 
-1. **Não converte para Markdown**
-   - Processa texto puro extraído do DOCX
-   - Perde formatação estrutural
+- Evita reprocessamento
+- Permite auditoria
+- Suporta retomada após falhas
 
-2. **Classificação pode ser melhorada**
-   - Critérios podem ser refinados
-   - Prompt de classificação pode ser otimizado
+### Por que HNSW?
 
-3. **Dependência de Supabase**
-   - Script de importação específico para Supabase
-   - Precisa migrar para Neon do projeto principal
+- Melhor qualidade de busca que IVFFlat
+- Performance otimizada para busca vetorial
+- Configuração balanceada (m=16, ef_construction=64)
 
-4. **Processamento Sequencial**
-   - Classificação é sequencial (lenta para grandes volumes)
-   - Embeddings já usam batch processing
+### Por que text-embedding-3-small?
 
-## Melhorias Planejadas
+- Custo-benefício excelente ($0.02/1M tokens)
+- 1536 dimensões (suficiente para RAG)
+- Performance adequada para português
 
-1. **Conversão para Markdown**
-   - Adicionar etapa de conversão DOCX → Markdown
-   - Preservar estrutura (títulos, listas, etc.)
+## Limitações e Melhorias Futuras
 
-2. **Migração para AI SDK**
-   - Usar `@ai-sdk/openai` em vez de OpenAI SDK direto
-   - Melhor integração com o stack do projeto
+### Limitações Atuais
 
-3. **Integração com Neon + Drizzle**
-   - Criar schema Drizzle para RAG
-   - Migrações automáticas
-   - Integração com sistema principal
+- Processamento sequencial de classificação (pode ser paralelizado)
+- Chunking pode ser refinado para casos específicos
 
-4. **Processamento Paralelo**
-   - Paralelizar classificação quando possível
-   - Otimizar uso de API
+### Melhorias Planejadas
 
+- Paralelização de classificação (com rate limiting)
+- Chunking mais inteligente baseado em contexto jurídico
+- Cache de embeddings para reprocessamento

@@ -4,13 +4,13 @@
 1[0-9]. */
 2[0-5]. */
 
-# Ambiente virtual Python
+# Ambiente virtual Python (mantido para referência, mas não usado mais)
 venv/
 env/
 ENV/
 .venv/
 
-# Arquivos Python compilados
+# Arquivos Python compilados (mantido para referência)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,7 +24,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -77,10 +76,14 @@ docs_filtered.jsonl
 batch_requests.jsonl
 *.jsonl
 
-# Arquivos de dados e datasets (descomente se não quiser versionar)
+# Arquivos de dados e datasets
 # CSV e XLSX grandes/processados
-# *.csv
-# *.xlsx
+*.csv
+*.xlsx
+
+# Relatórios de processamento
+processing-status.json
+data/
 
 # Arquivos específicos grandes (descomente se não quiser versionar)
 # selecao_rag.csv
@@ -115,4 +118,7 @@ batch_requests.jsonl
 .env
 .env.local
 config.local.py
+
+node_modules/
+package-lock.json
 

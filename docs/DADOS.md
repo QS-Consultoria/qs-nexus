@@ -1,275 +1,200 @@
 # Estrutura de Dados
 
-## Formato JSONL
+## Schema do Banco de Dados
 
-Todos os arquivos intermediários usam formato JSONL (JSON Lines), onde cada linha é um objeto JSON válido.
+### Tabela: `document_files`
 
-### Vantagens do JSONL
-- Processamento linha por linha (não precisa carregar tudo em memória)
-- Permite processamento incremental
-- Fácil de validar e debugar
-- Suporta streaming
-
-### Exemplo de Leitura
-```python
-import json
-
-with open("docs_filtered.jsonl", "r", encoding="utf-8") as f:
-    for line in f:
-        doc = json.loads(line.strip())
-        # processar doc
-```
-
-## Schemas de Dados
-
-### docs_raw.jsonl / docs_filtered.jsonl
-
-```json
-{
-  "id": "string",           // Nome do arquivo
-  "path": "string",         // Caminho completo do arquivo
-  "words": 1234,            // Contagem de palavras
-  "text": "string"          // Texto extraído do DOCX
-}
-```
-
-**Campos:**
-- `id`: Identificador único (nome do arquivo)
-- `path`: Caminho completo do arquivo original
-- `words`: Número de palavras no documento
-- `text`: Conteúdo textual extraído
-
-### classification_results.jsonl
-
-```json
-{
-  "id": "string",                    // ID do documento
-  "tipo_documento": "string",        // peticao_inicial | contestacao | recurso | parecer | contrato | modelo_generico | outro
-  "area_direito": "string",          // civil | trabalhista | tributario | empresarial | consumidor | penal | administrativo | previdenciario | outro
-  "modelo_ou_peca_real": "string",   // modelo | peca_real
-  "qualidade_clareza": 1-10,        // Nota de clareza
-  "qualidade_estrutura": 1-10,       // Nota de estrutura
-  "risco": 1-5,                      // Nível de risco (1=baixo, 5=alto)
-  "resumo": "string"                  // Resumo de até 2 linhas
-}
-```
-
-**Valores Possíveis:**
-
-**tipo_documento:**
-- `peticao_inicial`: Petição inicial
-- `contestacao`: Contestação
-- `recurso`: Recurso
-- `parecer`: Parecer
-- `contrato`: Contrato
-- `modelo_generico`: Modelo genérico
-- `outro`: Outro tipo
-
-**area_direito:**
-- `civil`: Direito Civil
-- `trabalhista`: Direito Trabalhista
-- `tributario`: Direito Tributário
-- `empresarial`: Direito Empresarial
-- `consumidor`: Direito do Consumidor
-- `penal`: Direito Penal
-- `administrativo`: Direito Administrativo
-- `previdenciario`: Direito Previdenciário
-- `outro`: Outra área
-
-**modelo_ou_peca_real:**
-- `modelo`: Documento modelo/template
-- `peca_real`: Peça jurídica real
-
-### embeddings.jsonl
-
-```json
-{
-  "doc_id": "string",        // ID do documento original
-  "chunk_index": 0,         // Índice do chunk no documento
-  "embedding": [0.123, ...]  // Array de 1536 números (vetor de embedding)
-}
-```
-
-**Características:**
-- Cada documento pode ter múltiplos chunks
-- `chunk_index` começa em 0
-- `embedding` é um array de 1536 números (float)
-- Modelo usado: `text-embedding-3-small`
-
-## Formato CSV
-
-### curadoria.csv
-
-```csv
-documento_id,tipo_documento,area_direito,modelo_ou_peca_real,qualidade_clareza,qualidade_estrutura,risco,resumo
-```
-
-**Colunas:**
-- `documento_id`: ID do documento
-- `tipo_documento`: Tipo do documento
-- `area_direito`: Área de direito
-- `modelo_ou_peca_real`: Tipo (modelo ou peça real)
-- `qualidade_clareza`: Nota de 1 a 10
-- `qualidade_estrutura`: Nota de 1 a 10
-- `risco`: Nota de 1 a 5
-- `resumo`: Resumo do documento
-
-### selecao_rag.csv
-
-Adiciona colunas ao `curadoria.csv`:
-
-```csv
-documento_id,tipo_documento,...,resumo,NOTA,RAG GOLD,RAG SILVER
-```
-
-**Colunas Adicionais:**
-- `NOTA`: Nota calculada (pode usar vírgula como decimal: "56,25")
-- `RAG GOLD`: "SIM" ou "NÃO" - indica se é dataset GOLD
-- `RAG SILVER`: "SIM" ou "NÃO" - indica se é dataset SILVER
-
-**Delimitador:**
-- Pode ser vírgula (`,`) ou ponto-e-vírgula (`;`)
-- Script `build_datasets.py` detecta automaticamente
-
-### dataset_gold.csv, dataset_silver.csv, dataset_curado.csv
-
-Mesma estrutura do `selecao_rag.csv`, mas filtrados:
-- `dataset_gold.csv`: Apenas documentos com `RAG GOLD = "SIM"`
-- `dataset_silver.csv`: Apenas documentos com `RAG SILVER = "SIM"`
-- `dataset_curado.csv`: Documentos GOLD + SILVER
-
-## Banco de Dados
-
-### Tabela: lw_embeddings
+Tracking de arquivos DOCX processados.
 
 ```sql
-CREATE TABLE lw_embeddings (
-    doc_id      text,              -- ID do documento
-    chunk_index integer,           -- Índice do chunk
-    content     text,              -- Texto do chunk
-    embedding   vector(1536),       -- Vetor de embedding (pgvector)
-    created_at  timestamptz DEFAULT now()
+CREATE TABLE document_files (
+  id UUID PRIMARY KEY,
+  file_path TEXT UNIQUE,        -- Caminho relativo ao root
+  file_name TEXT,
+  file_hash TEXT,               -- SHA256 para detectar mudanças
+  status file_status,           -- pending, processing, completed, failed, rejected
+  rejected_reason TEXT,
+  words_count INTEGER,
+  processed_at TIMESTAMP,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
 );
 ```
 
-**Índices Recomendados:**
-```sql
--- Índice para busca por documento
-CREATE INDEX idx_lw_embeddings_doc_id ON lw_embeddings(doc_id);
+### Tabela: `templates`
 
--- Índice para busca vetorial (HNSW)
-CREATE INDEX idx_lw_embeddings_vector ON lw_embeddings 
-USING hnsw (embedding vector_cosine_ops);
+Documentos processados completos (TemplateDocument).
+
+```sql
+CREATE TABLE templates (
+  id UUID PRIMARY KEY,
+  document_file_id UUID REFERENCES document_files(id),
+  title TEXT,
+  doc_type doc_type,            -- peticao_inicial, contestacao, etc.
+  area area,                    -- civil, trabalhista, etc.
+  jurisdiction TEXT,            -- 'BR', 'TRT1', etc.
+  complexity complexity,        -- simples, medio, complexo
+  tags TEXT[],
+  summary TEXT,                 -- Resumo otimizado para embedding
+  markdown TEXT,               -- Conteúdo completo em Markdown
+  metadata JSONB,
+  quality_score DECIMAL(5,2),  -- 0-100
+  is_gold BOOLEAN,
+  is_silver BOOLEAN,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
 ```
 
-**Operações de Busca:**
-```sql
--- Busca por similaridade (cosine)
-SELECT doc_id, chunk_index, content, 
-       1 - (embedding <=> $1::vector) as similarity
-FROM lw_embeddings
-ORDER BY embedding <=> $1::vector
-LIMIT 10;
+### Tabela: `template_chunks`
 
--- Busca por documento
-SELECT * FROM lw_embeddings 
-WHERE doc_id = 'nome_arquivo.docx'
+Chunks individuais com embeddings.
+
+```sql
+CREATE TABLE template_chunks (
+  id UUID PRIMARY KEY,
+  template_id UUID REFERENCES templates(id),
+  section TEXT,                 -- Nome da seção (ex: "Dos Fatos")
+  role TEXT,                   -- intro, fundamentacao, pedido, etc.
+  content_markdown TEXT,        -- Conteúdo do chunk em Markdown
+  chunk_index INTEGER,         -- Ordem no documento
+  embedding vector(1536),       -- Embedding do chunk
+  created_at TIMESTAMP
+);
+```
+
+### Índices
+
+```sql
+-- Índices B-tree
+CREATE INDEX idx_document_files_file_path ON document_files(file_path);
+CREATE INDEX idx_document_files_status ON document_files(status);
+CREATE INDEX idx_templates_doc_type ON templates(doc_type);
+CREATE INDEX idx_templates_area ON templates(area);
+CREATE INDEX idx_template_chunks_template_id ON template_chunks(template_id);
+
+-- Índice HNSW para busca vetorial
+CREATE INDEX idx_template_chunks_embedding_hnsw ON template_chunks 
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+
+## Enums
+
+### file_status
+- `pending`: Aguardando processamento
+- `processing`: Em processamento
+- `completed`: Processado com sucesso
+- `failed`: Falhou no processamento
+- `rejected`: Rejeitado (nunca será reprocessado)
+
+### doc_type
+- `peticao_inicial`
+- `contestacao`
+- `recurso`
+- `parecer`
+- `contrato`
+- `modelo_generico`
+- `outro`
+
+### area
+- `civil`
+- `trabalhista`
+- `tributario`
+- `empresarial`
+- `consumidor`
+- `penal`
+- `administrativo`
+- `previdenciario`
+- `outro`
+
+### complexity
+- `simples`
+- `medio`
+- `complexo`
+
+## Operações de Busca
+
+### Busca por Similaridade Vetorial
+
+```sql
+-- Busca chunks similares a uma query
+SELECT 
+  tc.content_markdown,
+  t.title,
+  t.doc_type,
+  t.area,
+  1 - (tc.embedding <=> $1::vector) as similarity
+FROM template_chunks tc
+JOIN templates t ON t.id = tc.template_id
+WHERE t.area = 'civil'  -- Filtro opcional
+ORDER BY tc.embedding <=> $1::vector
+LIMIT 10;
+```
+
+### Busca por Template
+
+```sql
+-- Buscar todos os chunks de um template
+SELECT *
+FROM template_chunks
+WHERE template_id = $1
 ORDER BY chunk_index;
 ```
 
-## Estatísticas Típicas
+### Estatísticas de Processamento
 
-### Volumes Esperados
-
-- **Documentos brutos:** ~10.000-50.000 arquivos DOCX
-- **Documentos filtrados:** ~80-90% dos brutos (após remoção de outliers)
-- **Documentos classificados:** Mesmo número dos filtrados
-- **Chunks por documento:** 1-10 (depende do tamanho)
-- **Total de chunks:** ~50.000-200.000
-
-### Tamanhos de Arquivo
-
-- `docs_raw.jsonl`: ~500MB - 2GB
-- `docs_filtered.jsonl`: ~450MB - 1.8GB
-- `classification_results.jsonl`: ~10-50MB
-- `embeddings.jsonl`: ~200MB - 1GB (depende do número de chunks)
-- CSVs: ~5-20MB cada
-
-### Dimensões de Embeddings
-
-- **Modelo:** `text-embedding-3-small`
-- **Dimensões:** 1536
-- **Tipo:** Float32
-- **Tamanho por embedding:** ~6KB (1536 * 4 bytes)
-
-## Validação de Dados
-
-### Verificar Integridade do JSONL
-
-```python
-import json
-
-def validate_jsonl(filepath):
-    errors = []
-    with open(filepath, 'r', encoding='utf-8') as f:
-        for i, line in enumerate(f, 1):
-            try:
-                json.loads(line.strip())
-            except json.JSONDecodeError as e:
-                errors.append(f"Linha {i}: {e}")
-    return errors
+```sql
+-- Status geral
+SELECT 
+  status,
+  COUNT(*) as total
+FROM document_files
+GROUP BY status;
 ```
 
-### Verificar Chunks
+## Relatório de Status
 
-```python
-import json
-from collections import defaultdict
+O arquivo `processing-status.json` contém:
 
-def check_chunks(filepath):
-    doc_chunks = defaultdict(list)
-    with open(filepath, 'r', encoding='utf-8') as f:
-        for line in f:
-            chunk = json.loads(line)
-            doc_chunks[chunk['doc_id']].append(chunk['chunk_index'])
-    
-    # Verificar se chunks são sequenciais
-    for doc_id, indices in doc_chunks.items():
-        indices.sort()
-        expected = list(range(len(indices)))
-        if indices != expected:
-            print(f"AVISO: {doc_id} tem chunks não sequenciais")
+```json
+{
+  "timestamp": "2024-01-01T00:00:00Z",
+  "summary": {
+    "total": 1000,
+    "pending": 50,
+    "processing": 5,
+    "completed": 900,
+    "failed": 10,
+    "rejected": 35,
+    "progress": 90
+  },
+  "files": [...],
+  "rejectedFiles": [...]
+}
 ```
 
-## Migração de Dados
+## Migração de Dados Antigos
 
-### Converter JSONL para CSV
+Se você tiver dados do sistema Python antigo:
 
-```python
-import json
-import csv
+1. **JSONL antigo**: Não é mais usado, dados estão no banco
+2. **CSV antigo**: Pode ser usado como referência, mas não é necessário
+3. **Embeddings antigos**: Precisam ser regenerados com o novo sistema
 
-def jsonl_to_csv(jsonl_file, csv_file):
-    with open(jsonl_file, 'r', encoding='utf-8') as fin, \
-         open(csv_file, 'w', newline='', encoding='utf-8') as fout:
-        writer = csv.DictWriter(fout, fieldnames=['id', 'text'])
-        writer.writeheader()
-        for line in fin:
-            doc = json.loads(line)
-            writer.writerow({'id': doc['id'], 'text': doc['text']})
+## Validação
+
+### Verificar Integridade
+
+```sql
+-- Verificar templates sem chunks
+SELECT t.id, t.title
+FROM templates t
+LEFT JOIN template_chunks tc ON tc.template_id = t.id
+WHERE tc.id IS NULL;
+
+-- Verificar chunks sem embeddings
+SELECT COUNT(*)
+FROM template_chunks
+WHERE embedding IS NULL;
 ```
-
-### Converter CSV para JSONL
-
-```python
-import csv
-import json
-
-def csv_to_jsonl(csv_file, jsonl_file):
-    with open(csv_file, 'r', encoding='utf-8') as fin, \
-         open(jsonl_file, 'w', encoding='utf-8') as fout:
-        reader = csv.DictReader(fin)
-        for row in reader:
-            fout.write(json.dumps(row, ensure_ascii=False) + '\n')
-```
-

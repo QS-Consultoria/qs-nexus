@@ -2,208 +2,136 @@
 
 ## Pré-requisitos
 
-1. **Python 3.9+**
-2. **Bibliotecas Python:**
-   ```bash
-   pip install python-docx openai tqdm psycopg2-binary
+1. **Node.js 18+**
+2. **PostgreSQL com pgvector** (Neon recomendado)
+3. **Conta OpenAI** com API key
+
+## Instalação
+
+```bash
+npm install
+```
+
+## Configuração
+
+1. Copie `.env.local.example` para `.env.local`
+2. Configure as variáveis:
+   ```env
+   DATABASE_URL=postgresql://...
+   OPENAI_API_KEY=sk-...
+   DOCX_SOURCE_DIR=../list-docx
    ```
-3. **Chave da API OpenAI:**
-   ```bash
-   export OPENAI_API_KEY="sua-chave-aqui"
-   ```
 
-## Execução Rápida
+## Setup do Banco
 
-### 1. Extrair Documentos
+### 1. Habilitar pgvector
 
-```bash
-python extract_docs.py
+Execute no Neon (via MCP ou SQL direto):
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-**Resultado:** `docs_raw.jsonl`
-
-### 2. Filtrar Documentos
+### 2. Executar Migrations
 
 ```bash
-python filter_docs.py
+npm run db:migrate
 ```
 
-**Resultado:** `docs_filtered.jsonl`
-
-### 3. Classificar Documentos
+## Pipeline Completo
 
 ```bash
-# Certifique-se de ter OPENAI_API_KEY configurada
-python classify_docs_v3.py
+# 1. Processar documentos (DOCX → Markdown)
+npm run rag:process
+
+# 2. Filtrar documentos
+npm run rag:filter
+
+# 3. Classificar documentos
+npm run rag:classify
+
+# 4. Gerar chunks
+npm run rag:chunk
+
+# 5. Gerar embeddings
+npm run rag:embed
+
+# 6. Armazenar no banco
+npm run rag:store
 ```
 
-**Resultado:** `classification_results.jsonl`
-
-**Tempo estimado:** ~1-2 minutos por documento (processamento sequencial)
-
-### 4. Converter para CSV
+## Utilitários
 
 ```bash
-python convert_to_csv_v2.py
+# Gerar relatório de status
+npm run rag:status
+
+# Reprocessar um arquivo específico
+npm run rag:reprocess "../list-docx/01. Trabalhista/documento.docx"
 ```
 
-**Resultado:** `curadoria.csv`
+## Verificação
 
-### 5. Seleção Manual
-
-1. Abra `curadoria.csv` em Excel ou editor de planilhas
-2. Adicione colunas:
-   - `NOTA`: Calcule baseado em qualidade_clareza, qualidade_estrutura, risco
-   - `RAG GOLD`: "SIM" ou "NÃO" (nota > 60)
-   - `RAG SILVER`: "SIM" ou "NÃO" (56 ≤ nota < 60)
-3. Salve como `selecao_rag.csv`
-
-### 6. Gerar Datasets
+### Verificar Status
 
 ```bash
-python build_datasets.py
+npm run rag:status
 ```
 
-**Resultado:** 
-- `dataset_gold.csv`
-- `dataset_silver.csv`
-- `dataset_curado.csv`
+Isso gera `processing-status.json` com:
 
-### 7. Gerar Embeddings
+- Total de arquivos
+- Status de cada arquivo
+- Progresso geral
+- Arquivos rejeitados
 
-```bash
-python create_embeddings.py
-```
+### Verificar no Banco
 
-**Resultado:** `embeddings.jsonl`
+```sql
+-- Ver templates criados
+SELECT COUNT(*) FROM templates;
 
-**Tempo estimado:** ~10-30 segundos por 1000 chunks
-
-### 8. Importar para Banco (Opcional)
-
-```bash
-# Edite import_embeddings_supabase.py com suas credenciais
-python import_embeddings_supabase.py
-```
-
-## Pipeline Completo (Script Único)
-
-Você pode criar um script que executa tudo:
-
-```bash
-#!/bin/bash
-python extract_docs.py && \
-python filter_docs.py && \
-python classify_docs_v3.py && \
-python convert_to_csv_v2.py && \
-echo "Agora edite curadoria.csv e salve como selecao_rag.csv" && \
-python build_datasets.py && \
-python create_embeddings.py
-```
-
-## Verificação Rápida
-
-### Verificar se arquivos foram gerados
-
-```bash
-ls -lh *.jsonl *.csv
-```
-
-### Verificar número de documentos
-
-```bash
-# Contar linhas em JSONL
-wc -l docs_filtered.jsonl
-
-# Contar linhas em CSV (menos header)
-tail -n +2 curadoria.csv | wc -l
-```
-
-### Verificar um documento
-
-```python
-import json
-
-# Ler primeiro documento
-with open("docs_filtered.jsonl", "r") as f:
-    first_line = f.readline()
-    doc = json.loads(first_line)
-    print(f"ID: {doc['id']}")
-    print(f"Palavras: {doc['words']}")
-    print(f"Texto (primeiros 200 chars): {doc['text'][:200]}")
+-- Ver chunks com embeddings
+SELECT COUNT(*) FROM template_chunks WHERE embedding IS NOT NULL;
 ```
 
 ## Troubleshooting
 
-### Erro: "OPENAI_API_KEY not found"
+### Erro: "DATABASE_URL is not set"
+
+- Verifique se `.env.local` existe e contém `DATABASE_URL`
+
+### Erro: "vector type does not exist"
+
+- Execute: `CREATE EXTENSION IF NOT EXISTS vector;` no Neon
+
+### Erro: "Cannot find module"
+
+- Execute `npm install` novamente
+
+### Arquivo não processado
+
+- Verifique o relatório de status: `npm run rag:status`
+- Verifique se o arquivo está em `../list-docx`
+- Verifique se o arquivo não foi rejeitado
+
+### Reprocessar arquivo
 
 ```bash
-export OPENAI_API_KEY="sua-chave"
-# ou crie arquivo .env e use python-dotenv
+npm run rag:reprocess "../list-docx/caminho/arquivo.docx"
 ```
-
-### Erro: "ModuleNotFoundError"
-
-```bash
-pip install python-docx openai tqdm psycopg2-binary
-```
-
-### Erro: "File not found"
-
-Certifique-se de estar no diretório correto:
-```bash
-cd /Users/william/development/legalwise/rag-system/lw-rag-system
-```
-
-**Nota:** Os arquivos DOCX estão localizados em:
-```bash
-/Users/william/development/legalwise/rag-system/list-docx
-```
-O script `extract_docs.py` está configurado para buscar os documentos nesta pasta automaticamente.
-
-### Classificação muito lenta
-
-- Processamento é sequencial por design (evita rate limits)
-- Pode levar horas para grandes volumes
-- Script suporta retomada (não reprocessa documentos já classificados)
-
-### Erro ao importar para banco
-
-1. Verifique credenciais em `import_embeddings_supabase.py`
-2. Verifique se extensão pgvector está habilitada:
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   ```
-3. Verifique conectividade de rede
 
 ## Próximos Passos
 
 Após executar o pipeline:
 
-1. **Revisar datasets gerados**
-   - Verificar qualidade dos documentos GOLD/SILVER
-   - Ajustar critérios se necessário
-
-2. **Preparar para Markdown**
-   - Planejar conversão DOCX → Markdown
-   - Atualizar pipeline
-
-3. **Integrar com sistema principal**
-   - Criar schema Drizzle
-   - Migrar importação para Neon
-   - Integrar com AI SDK
+1. **Verificar qualidade**: Use `npm run rag:status` para ver estatísticas
+2. **Testar busca**: Use o banco para testar buscas vetoriais
+3. **Integrar com agente**: Use os templates para o agente de IA
 
 ## Dicas
 
-- **Backup:** Faça backup dos arquivos JSONL intermediários
-- **Incremental:** Scripts suportam retomada (não reprocessam dados existentes)
-- **Monitoramento:** Acompanhe logs no console para identificar problemas
-- **Validação:** Valide dados antes de prosseguir para próxima etapa
-
-## Recursos Adicionais
-
-- [README.md](./README.md) - Visão geral completa
-- [ARQUITETURA.md](./ARQUITETURA.md) - Detalhes arquiteturais
-- [SCRIPTS.md](./SCRIPTS.md) - Documentação detalhada dos scripts
-- [DADOS.md](./DADOS.md) - Estrutura de dados
-
+- **Incremental**: O sistema não reprocessa arquivos já processados
+- **Rejeitados**: Arquivos rejeitados nunca são reprocessados (por design)
+- **Caminhos**: Sempre use caminhos relativos ao root do projeto
+- **Status**: Sempre verifique o status antes de reprocessar
