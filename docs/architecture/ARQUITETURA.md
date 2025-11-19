@@ -78,6 +78,28 @@ Sistema de tracking que evita reprocessamento:
 - **Batch Insert**: 500 registros por batch
 - **Transações**: Garantia de consistência
 
+### 7. ConcurrencyPool (`lib/utils/concurrency-pool.ts`)
+
+Sistema de pool de concorrência para processamento paralelo:
+
+- **Controle de Concorrência**: Limita número de tarefas simultâneas
+- **Retry Logic**: Retry automático com backoff exponencial
+- **Progress Tracking**: Callbacks para acompanhar progresso
+- **Error Handling**: Tratamento robusto de erros
+
+Ver [Documentação do ConcurrencyPool](../reference/concurrency-pool.md) para detalhes.
+
+### 8. Worker Threads (`lib/workers/docx-converter-worker.ts`)
+
+Processamento isolado de conversão DOCX → Markdown:
+
+- **Isolamento**: Processamento em thread separada
+- **Paralelização**: Múltiplos workers simultâneos
+- **Error Isolation**: Erros não afetam outros workers
+- **Performance**: Aproveita múltiplos cores da CPU
+
+Ver [Documentação de Worker Threads](../reference/worker-threads.md) para detalhes.
+
 ## Estrutura de Dados
 
 ### TemplateDocument
@@ -151,15 +173,23 @@ Sistema de tracking que evita reprocessamento:
 - 1536 dimensões (suficiente para RAG)
 - Performance adequada para português
 
-## Limitações e Melhorias Futuras
+## Paralelização
 
-### Limitações Atuais
+O sistema foi completamente paralelizado para melhorar a performance:
 
-- Processamento sequencial de classificação (pode ser paralelizado)
-- Chunking pode ser refinado para casos específicos
+- ✅ **ConcurrencyPool**: Sistema de pool de concorrência para processamento paralelo
+- ✅ **Worker Threads**: Processamento isolado de conversão DOCX → Markdown
+- ✅ **Scripts Paralelizados**: Todos os scripts principais agora são paralelos
+  - `process-documents`: 6 workers paralelos (Worker Threads)
+  - `classify-documents`: 3 workers paralelos
+  - `generate-embeddings`: 2 workers paralelos
+  - `filter-documents`: 10 workers paralelos
 
-### Melhorias Planejadas
+Ver [Guia de Paralelização](../guides/paralelizacao.md) para detalhes.
 
-- Paralelização de classificação (com rate limiting)
+## Melhorias Futuras
+
 - Chunking mais inteligente baseado em contexto jurídico
 - Cache de embeddings para reprocessamento
+- Auto-ajuste de concorrência baseado em rate limits
+- Dashboard de monitoramento em tempo real

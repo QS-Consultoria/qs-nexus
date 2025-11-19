@@ -82,14 +82,19 @@ O pipeline atual segue os seguintes passos:
 ✅ **Embeddings Otimizados**: text-embedding-3-small (custo-benefício)  
 ✅ **Índice HNSW**: Busca vetorial otimizada  
 ✅ **Relatórios de Status**: `processing-status.json`  
-✅ **Reprocessamento Individual**: Permite reprocessar arquivos específicos
+✅ **Reprocessamento Individual**: Permite reprocessar arquivos específicos  
+✅ **Paralelização Completa**: Todos os scripts principais são paralelos  
+✅ **Worker Threads**: Processamento isolado de conversão DOCX  
+✅ **ConcurrencyPool**: Sistema de pool de concorrência com retry logic
 
 ## Documentação Adicional
 
-- [SETUP.md](./SETUP.md) - Guia completo de configuração
-- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Resumo da implementação
-- [ARQUITETURA.md](./ARQUITETURA.md) - Arquitetura detalhada (atualizada)
-- [DADOS.md](./DADOS.md) - Estrutura de dados (atualizada)
+- [SETUP.md](./setup/SETUP.md) - Guia completo de configuração
+- [QUICK_START.md](./setup/QUICK_START.md) - Guia rápido para começar
+- [ARQUITETURA.md](./architecture/ARQUITETURA.md) - Arquitetura detalhada
+- [DADOS.md](./architecture/DADOS.md) - Estrutura de dados
+- [paralelizacao.md](./guides/paralelizacao.md) - Guia de paralelização
+- [INDEX.md](./INDEX.md) - Índice completo da documentação
 
 ## Notas Importantes
 

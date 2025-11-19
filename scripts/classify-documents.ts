@@ -12,8 +12,72 @@ import {
   removeTemporaryMarkdown,
   markFileCompleted,
 } from '../lib/services/file-tracker.js';
+import { ConcurrencyPool, Task } from '../lib/utils/concurrency-pool.js';
 
 dotenv.config({ path: '.env.local' });
+
+const CLASSIFY_CONCURRENCY = parseInt(process.env.CLASSIFY_CONCURRENCY || '3', 10);
+
+interface ClassifyResult {
+  fileId: string;
+  filePath: string;
+  success: boolean;
+  skipped?: boolean;
+}
+
+/**
+ * Classifica um documento individual
+ */
+async function classifyDocumentTask(file: Awaited<ReturnType<typeof db.select<typeof documentFiles>>>[0]): Promise<ClassifyResult> {
+  // Busca template existente (se houver)
+  const existingTemplate = await db
+    .select()
+    .from(templates)
+    .where(eq(templates.documentFileId, file.id))
+    .limit(1);
+
+  if (existingTemplate[0]) {
+    return {
+      fileId: file.id,
+      filePath: file.filePath,
+      success: true,
+      skipped: true,
+    };
+  }
+
+  // Lê markdown temporário
+  const markdown = readTemporaryMarkdown(file.fileHash);
+  if (!markdown) {
+    return {
+      fileId: file.id,
+      filePath: file.filePath,
+      success: true,
+      skipped: true,
+    };
+  }
+
+  // Classifica o documento
+  const classification = await classifyDocument(markdown);
+  
+  // Cria TemplateDocument
+  const templateDoc = createTemplateDocument(classification, markdown, file.id);
+  
+  // Armazena template no banco
+  const templateId = await storeTemplate(templateDoc, file.id);
+  
+  // Marca arquivo como completo
+  await markFileCompleted(file.filePath, templateId, file.wordsCount || 0);
+  
+  // Remove markdown temporário
+  removeTemporaryMarkdown(file.fileHash);
+  
+  return {
+    fileId: file.id,
+    filePath: file.filePath,
+    success: true,
+    skipped: false,
+  };
+}
 
 async function main() {
   console.log('🔍 Classificando documentos...');
@@ -25,60 +89,43 @@ async function main() {
     .where(eq(documentFiles.status, 'processing'));
 
   console.log(`📄 Encontrados ${files.length} arquivos para classificar`);
+  console.log(`⚙️  Usando ${CLASSIFY_CONCURRENCY} workers paralelos\n`);
 
-  let classified = 0;
-  let skipped = 0;
-  let errors = 0;
+  // Cria pool de concorrência
+  const pool = new ConcurrencyPool<ClassifyResult>({
+    maxConcurrency: CLASSIFY_CONCURRENCY,
+    maxRetries: parseInt(process.env.MAX_RETRIES || '3', 10),
+    onProgress: (stats) => {
+      const progress = stats.total > 0 
+        ? Math.round((stats.completed / stats.total) * 100) 
+        : 0;
+      process.stdout.write(
+        `\r📊 Progresso: ${stats.completed}/${stats.total} (${progress}%) | ` +
+        `Em processamento: ${stats.inProgress} | Falhas: ${stats.failed}`
+      );
+    },
+  });
 
-  for (const file of files) {
-    try {
-      // Busca template existente (se houver)
-      const existingTemplate = await db
-        .select()
-        .from(templates)
-        .where(eq(templates.documentFileId, file.id))
-        .limit(1);
+  // Cria tarefas para cada arquivo
+  const tasks: Task<ClassifyResult>[] = files.map((file) => ({
+    id: `classify-${file.id}`,
+    execute: () => classifyDocumentTask(file),
+  }));
 
-      if (existingTemplate[0]) {
-        console.log(`✓ Já classificado: ${file.filePath}`);
-        skipped++;
-        continue;
-      }
+  pool.addBatch(tasks);
 
-      // Lê markdown temporário
-      const markdown = readTemporaryMarkdown(file.fileHash);
-      if (!markdown) {
-        console.log(`⚠️ Markdown não encontrado para ${file.filePath} - pulando`);
-        skipped++;
-        continue;
-      }
+  // Processa todas as tarefas
+  const startTime = Date.now();
+  const results = await pool.processAll();
+  const endTime = Date.now();
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-      // Classifica o documento
-      console.log(`🔍 Classificando: ${file.filePath}...`);
-      const classification = await classifyDocument(markdown);
-      
-      // Cria TemplateDocument
-      const templateDoc = createTemplateDocument(classification, markdown, file.id);
-      
-      // Armazena template no banco
-      const templateId = await storeTemplate(templateDoc, file.id);
-      
-      // Marca arquivo como completo
-      await markFileCompleted(file.filePath, templateId, file.wordsCount || 0);
-      
-      // Remove markdown temporário
-      removeTemporaryMarkdown(file.fileHash);
-      
-      console.log(`✓ Classificado: ${file.filePath} (${classification.docType}, ${classification.area}, qualidade: ${classification.qualityScore})`);
-      classified++;
-      
-    } catch (error) {
-      console.error(`✗ Erro ao classificar ${file.filePath}:`, error);
-      errors++;
-    }
-  }
+  // Analisa resultados
+  const classified = results.filter(r => r.success && !r.result?.skipped).length;
+  const skipped = results.filter(r => r.success && r.result?.skipped).length;
+  const errors = results.filter(r => !r.success).length;
 
-  console.log(`\n✅ Classificação concluída:`);
+  console.log(`\n\n✅ Classificação concluída em ${duration}s`);
   console.log(`   ✓ Classificados: ${classified}`);
   console.log(`   ⊘ Pulados: ${skipped}`);
   console.log(`   ✗ Erros: ${errors}`);

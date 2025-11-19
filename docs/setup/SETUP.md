@@ -33,7 +33,10 @@ BATCH_SIZE=64
 CHUNK_MAX_TOKENS=800
 
 # Processamento Paralelo
-WORKER_CONCURRENCY=6          # Número de workers paralelos (padrão: 6)
+WORKER_CONCURRENCY=6          # Número de workers paralelos para process-documents (padrão: 6)
+CLASSIFY_CONCURRENCY=3        # Número de workers paralelos para classify-documents (padrão: 3)
+EMBED_CONCURRENCY=2           # Número de workers paralelos para generate-embeddings (padrão: 2)
+FILTER_CONCURRENCY=10         # Número de workers paralelos para filter-documents (padrão: 10)
 DB_MAX_CONNECTIONS=20         # Máximo de conexões do pool do banco (padrão: 20)
 MAX_RETRIES=3                 # Tentativas de retry em caso de falha (padrão: 3)
 
