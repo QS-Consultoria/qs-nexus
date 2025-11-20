@@ -83,13 +83,13 @@ export function FileUpload({ onFilesSelected, maxSize = 50 }: FileUploadProps) {
       >
         <CardContent className="flex flex-col items-center justify-center p-12">
           <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-lg font-medium mb-2">
+          <p className="text-lg font-semibold mb-2">
             Arraste arquivos DOCX aqui ou clique para selecionar
           </p>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-6">
             Tamanho máximo: {maxSize}MB por arquivo
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
@@ -136,22 +136,24 @@ export function FileUpload({ onFilesSelected, maxSize = 50 }: FileUploadProps) {
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between rounded-lg border p-2"
+                    className="flex items-center justify-between rounded-lg border bg-muted/50 p-3 transition-colors hover:bg-muted"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{file.name}</span>
-                      <Badge variant="outline" className="text-xs">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate">{file.name}</span>
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </Badge>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
                       onClick={() => removeFile(index)}
                     >
                       <X className="h-4 w-4" />
+                      <span className="sr-only">Remover arquivo</span>
                     </Button>
                   </div>
                 ))}

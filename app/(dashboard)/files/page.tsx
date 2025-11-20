@@ -68,17 +68,17 @@ export default function FilesPage() {
   }, [page, statusFilter])
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Arquivos</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
+    <div className="flex flex-1 flex-col gap-4 md:gap-6">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">Arquivos</h1>
+        <p className="text-muted-foreground">
           Lista de todos os arquivos processados
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Filtros</CardTitle>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -107,8 +107,8 @@ export default function FilesPage() {
           {isLoading ? (
             <FileListSkeleton />
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
               <p className="text-sm text-muted-foreground mb-4">{error}</p>
               <Button
                 variant="outline"

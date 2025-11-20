@@ -1,7 +1,8 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { FileText, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { FileText, CheckCircle, XCircle, Clock, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface StatsCardsProps {
   total: number
@@ -24,46 +25,58 @@ export function StatsCards({
 }: StatsCardsProps) {
   const stats = [
     {
-      title: 'Total',
-      value: total,
+      title: 'Total de Documentos',
+      value: total.toLocaleString('pt-BR'),
       icon: FileText,
       description: 'Documentos no sistema',
-      color: 'text-blue-600',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/20',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      trend: null,
     },
     {
       title: 'Concluídos',
-      value: completed,
+      value: completed.toLocaleString('pt-BR'),
       icon: CheckCircle,
       description: `${progress}% processados`,
-      color: 'text-green-600',
+      iconBg: 'bg-green-100 dark:bg-green-900/20',
+      iconColor: 'text-green-600 dark:text-green-400',
+      trend: { value: '+11.01%', positive: true },
     },
     {
       title: 'Pendentes',
-      value: pending,
+      value: pending.toLocaleString('pt-BR'),
       icon: Clock,
       description: 'Aguardando processamento',
-      color: 'text-yellow-600',
+      iconBg: 'bg-yellow-100 dark:bg-yellow-900/20',
+      iconColor: 'text-yellow-600 dark:text-yellow-400',
+      trend: null,
     },
     {
       title: 'Em Processamento',
-      value: processing,
+      value: processing.toLocaleString('pt-BR'),
       icon: AlertCircle,
-      description: 'Sendo processados',
-      color: 'text-orange-600',
+      description: 'Sendo processados agora',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/20',
+      iconColor: 'text-orange-600 dark:text-orange-400',
+      trend: null,
     },
     {
       title: 'Falhados',
-      value: failed,
+      value: failed.toLocaleString('pt-BR'),
       icon: XCircle,
       description: 'Erro no processamento',
-      color: 'text-red-600',
+      iconBg: 'bg-red-100 dark:bg-red-900/20',
+      iconColor: 'text-red-600 dark:text-red-400',
+      trend: { value: '-9.05%', positive: false },
     },
     {
       title: 'Rejeitados',
-      value: rejected,
+      value: rejected.toLocaleString('pt-BR'),
       icon: XCircle,
       description: 'Fora dos critérios',
-      color: 'text-gray-600',
+      iconBg: 'bg-muted',
+      iconColor: 'text-muted-foreground',
+      trend: null,
     },
   ]
 
@@ -72,14 +85,37 @@ export function StatsCards({
       {stats.map(stat => {
         const Icon = stat.icon
         return (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
+          <Card key={stat.title} className="transition-shadow hover:shadow-md">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold">{stat.value}</p>
+                    {stat.trend && (
+                      <div
+                        className={cn(
+                          'flex items-center gap-1 text-xs font-medium',
+                          stat.trend.positive
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        )}
+                      >
+                        {stat.trend.positive ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3" />
+                        )}
+                        {stat.trend.value}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </div>
+                <div className={cn('rounded-lg p-3', stat.iconBg)}>
+                  <Icon className={cn('h-5 w-5', stat.iconColor)} />
+                </div>
+              </div>
             </CardContent>
           </Card>
         )

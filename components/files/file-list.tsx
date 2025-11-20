@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Eye } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface File {
   id: string
@@ -28,11 +29,11 @@ interface FileListProps {
 }
 
 const statusColors: Record<string, string> = {
-  completed: 'bg-green-500',
-  pending: 'bg-yellow-500',
-  processing: 'bg-orange-500',
-  failed: 'bg-red-500',
-  rejected: 'bg-gray-500',
+  completed: 'bg-green-500 dark:bg-green-600',
+  pending: 'bg-yellow-500 dark:bg-yellow-600',
+  processing: 'bg-orange-500 dark:bg-orange-600',
+  failed: 'bg-red-500 dark:bg-red-600',
+  rejected: 'bg-muted',
 }
 
 export function FileList({ files }: FileListProps) {
@@ -63,7 +64,10 @@ export function FileList({ files }: FileListProps) {
                 <TableRow key={file.id}>
                   <TableCell className="font-medium">{file.fileName}</TableCell>
                   <TableCell>
-                    <Badge className={statusColors[file.status] || 'bg-gray-500'} variant="default">
+                    <Badge
+                      className={cn(statusColors[file.status] || 'bg-muted', 'text-xs')}
+                      variant="default"
+                    >
                       {file.status}
                     </Badge>
                   </TableCell>
@@ -87,7 +91,7 @@ export function FileList({ files }: FileListProps) {
       </div>
 
       {/* Cards mobile - visível apenas em mobile */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3">
         {files.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
@@ -96,42 +100,46 @@ export function FileList({ files }: FileListProps) {
           </Card>
         ) : (
           files.map(file => (
-            <Card key={file.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-base font-medium line-clamp-2">
+            <Card key={file.id} className="transition-shadow hover:shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base font-semibold line-clamp-2 flex-1">
                     {file.fileName}
                   </CardTitle>
                   <Link href={`/files/${file.id}`}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                       <Eye className="h-4 w-4" />
+                      <span className="sr-only">Ver detalhes</span>
                     </Button>
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2.5 pt-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  <Badge className={statusColors[file.status] || 'bg-gray-500'} variant="default">
+                  <span className="text-xs font-medium text-muted-foreground">Status:</span>
+                  <Badge
+                    className={cn(statusColors[file.status] || 'bg-muted', 'text-xs')}
+                    variant="default"
+                  >
                     {file.status}
                   </Badge>
                 </div>
                 {file.templateArea && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Área:</span>
-                    <span className="text-sm">{file.templateArea}</span>
+                    <span className="text-xs font-medium text-muted-foreground">Área:</span>
+                    <span className="text-xs">{file.templateArea}</span>
                   </div>
                 )}
                 {file.templateDocType && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Tipo:</span>
-                    <span className="text-sm">{file.templateDocType}</span>
+                    <span className="text-xs font-medium text-muted-foreground">Tipo:</span>
+                    <span className="text-xs">{file.templateDocType}</span>
                   </div>
                 )}
                 {file.updatedAt && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Atualizado:</span>
-                    <span className="text-sm">
+                    <span className="text-xs font-medium text-muted-foreground">Atualizado:</span>
+                    <span className="text-xs">
                       {new Date(file.updatedAt).toLocaleDateString('pt-BR')}
                     </span>
                   </div>

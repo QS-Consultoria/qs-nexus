@@ -1,11 +1,8 @@
 import postgres from 'postgres'
-import * as dotenv from 'dotenv'
 import { generateEmbedding } from './embedding-generator'
 
-dotenv.config({ path: '.env.local' })
-
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in .env.local')
+  throw new Error('DATABASE_URL is not set in environment variables')
 }
 
 // Client postgres para queries SQL raw (necessário para operador <=> do pgvector)

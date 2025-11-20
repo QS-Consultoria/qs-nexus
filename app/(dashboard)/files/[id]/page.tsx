@@ -121,7 +121,7 @@ export default function FileDetailsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="flex flex-1 flex-col gap-4 md:gap-6">
       <div className="flex items-center gap-4">
         <Link href="/files">
           <Button variant="ghost" size="sm">
@@ -129,8 +129,8 @@ export default function FileDetailsPage() {
             Voltar
           </Button>
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold">{file.fileName}</h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">{file.fileName}</h1>
           <p className="text-muted-foreground">Detalhes do arquivo</p>
         </div>
       </div>

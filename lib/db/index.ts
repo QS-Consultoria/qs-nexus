@@ -1,12 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema/rag'
-import * as dotenv from 'dotenv'
 
-dotenv.config({ path: '.env.local' })
-
+// Next.js automatically loads .env.local, so we don't need dotenv.config()
 if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set in .env.local')
+  throw new Error('DATABASE_URL is not set in environment variables')
 }
 
 // Configurar pool de conexões para suportar múltiplos workers
