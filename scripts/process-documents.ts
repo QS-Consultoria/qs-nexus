@@ -10,6 +10,7 @@ import {
   calculateFileHash,
   normalizeFilePath,
   saveTemporaryMarkdown,
+  readTemporaryMarkdown,
 } from '../lib/services/file-tracker.js';
 import { cleanMarkdown } from '../lib/services/docx-converter.js';
 import { ConcurrencyPool, Task } from '../lib/utils/concurrency-pool.js';
@@ -150,6 +151,18 @@ async function processDocument(filePath: string): Promise<ProcessResult | null> 
       if (existing.status === 'rejected') {
         return null; // Já rejeitado, pula
       }
+      // Se está como "processing" mas não tem markdown temporário, 
+      // significa que falhou anteriormente - vamos tentar processar novamente
+      if (existing.status === 'processing') {
+        const existingMarkdown = readTemporaryMarkdown(existing.fileHash);
+        if (!existingMarkdown) {
+          if (DEBUG) console.error(`[PROCESS] Arquivo em processing sem markdown, tentando novamente: ${fileName}`);
+          // Continua para tentar processar novamente
+        } else {
+          // Tem markdown, já foi processado com sucesso, apenas atualiza status se necessário
+          return null;
+        }
+      }
     }
 
     // Converte DOCX → Markdown usando Worker Thread
@@ -182,6 +195,9 @@ async function processDocument(filePath: string): Promise<ProcessResult | null> 
     if (DEBUG && error instanceof Error) {
       console.error(`[PROCESS] Stack: ${error.stack}`);
     }
+    
+    // IMPORTANTE: Não marca como rejeitado aqui, deixa o onTaskFailed fazer isso
+    // após todas as tentativas de retry serem esgotadas
     throw new Error(`Erro ao processar ${normalizedPath}: ${errorMsg}`);
   }
 }
@@ -214,16 +230,23 @@ async function main() {
         const filePath = match[1];
         const normalizedPath = normalizeFilePath(filePath, PROJECT_ROOT);
         
-        // Se for erro de arquivo corrompido/inválido, marca como rejeitado
-        if (isFileCorruptionError(errorMessage)) {
-          try {
-            await markFileRejected(normalizedPath, errorMessage);
-            const fileName = filePath.split('/').pop() || normalizedPath;
-            console.error(`[POOL] Arquivo marcado como rejeitado: ${fileName}`);
-          } catch (rejectError) {
-            console.error(`[POOL] Erro ao marcar como rejeitado: ${rejectError}`);
-          }
+        // Marca TODOS os erros como rejeitados (não apenas corrupção)
+        // Arquivos que falharam após todas as tentativas não devem ser reprocessados
+        try {
+          await markFileRejected(normalizedPath, errorMessage);
+          const fileName = filePath.split('/').pop() || normalizedPath;
+          console.error(`[POOL] ✅ Arquivo marcado como rejeitado: ${fileName}`);
+          console.error(`[POOL]    Motivo: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
+        } catch (rejectError) {
+          const fileName = filePath.split('/').pop() || normalizedPath;
+          console.error(`[POOL] ❌ ERRO ao marcar como rejeitado: ${fileName}`);
+          console.error(`[POOL]    Erro: ${rejectError instanceof Error ? rejectError.message : String(rejectError)}`);
+          if (process.env.DEBUG === 'true' && rejectError instanceof Error) {
+            console.error(`[POOL]    Stack: ${rejectError.stack}`);
         }
+        }
+      } else {
+        console.error(`[POOL] ⚠️  Não foi possível extrair filePath do taskId: ${taskId}`);
       }
     },
   });

@@ -12,6 +12,7 @@ import {
   readTemporaryMarkdown,
   removeTemporaryMarkdown,
   markFileCompleted,
+  markFileRejected,
 } from '../lib/services/file-tracker.js';
 import { ConcurrencyPool, Task } from '../lib/utils/concurrency-pool.js';
 
@@ -30,59 +31,77 @@ interface ClassifyResult {
  * Classifica um documento individual
  */
 async function classifyDocumentTask(file: InferSelectModel<typeof documentFiles>): Promise<ClassifyResult> {
-  // Busca template existente (se houver)
-  const existingTemplate = await db
-    .select()
-    .from(templates)
-    .where(eq(templates.documentFileId, file.id))
-    .limit(1);
+  try {
+    // Busca template existente (se houver)
+    const existingTemplate = await db
+      .select()
+      .from(templates)
+      .where(eq(templates.documentFileId, file.id))
+      .limit(1);
 
-  if (existingTemplate[0]) {
+    if (existingTemplate[0]) {
+      // Se já tem template, marca como completed (pode ter ficado em processing)
+      await markFileCompleted(
+        file.filePath,
+        existingTemplate[0].id,
+        file.wordsCount || 0
+      );
+      return {
+        fileId: file.id,
+        filePath: file.filePath,
+        success: true,
+        skipped: true,
+      };
+    }
+
+    // Lê markdown temporário
+    const markdown = readTemporaryMarkdown(file.fileHash);
+    if (!markdown) {
+      // Sem markdown temporário - não pode classificar
+      // Mas não marca como completed porque não foi classificado
+      // Deixa em processing para indicar que precisa ser reprocessado
+      return {
+        fileId: file.id,
+        filePath: file.filePath,
+        success: true,
+        skipped: true,
+      };
+    }
+
+    // Loga início da classificação do documento
+    console.log(`\n📝 Classificando: ${file.filePath}`);
+
+    // Classifica o documento com callback de progresso
+    const classification = await classifyDocument(markdown, (message) => {
+      console.log(`  ${message}`);
+    });
+    
+    // Cria TemplateDocument
+    const templateDoc = createTemplateDocument(classification, markdown, file.id);
+    
+    // Armazena template no banco
+    const templateId = await storeTemplate(templateDoc, file.id);
+    
+    // Marca arquivo como completo
+    await markFileCompleted(file.filePath, templateId, file.wordsCount || 0);
+    
+    // Remove markdown temporário
+    removeTemporaryMarkdown(file.fileHash);
+    
     return {
       fileId: file.id,
       filePath: file.filePath,
       success: true,
-      skipped: true,
+      skipped: false,
     };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[CLASSIFY] ERRO ao classificar ${file.filePath}: ${errorMsg}`);
+    
+    // Re-lança o erro para que o ConcurrencyPool possa tratá-lo
+    // O onTaskFailed será chamado após todas as tentativas
+    throw new Error(`Erro ao classificar ${file.filePath}: ${errorMsg}`);
   }
-
-  // Lê markdown temporário
-  const markdown = readTemporaryMarkdown(file.fileHash);
-  if (!markdown) {
-    return {
-      fileId: file.id,
-      filePath: file.filePath,
-      success: true,
-      skipped: true,
-    };
-  }
-
-  // Loga início da classificação do documento
-  console.log(`\n📝 Classificando: ${file.filePath}`);
-
-  // Classifica o documento com callback de progresso
-  const classification = await classifyDocument(markdown, (message) => {
-    console.log(`  ${message}`);
-  });
-  
-  // Cria TemplateDocument
-  const templateDoc = createTemplateDocument(classification, markdown, file.id);
-  
-  // Armazena template no banco
-  const templateId = await storeTemplate(templateDoc, file.id);
-  
-  // Marca arquivo como completo
-  await markFileCompleted(file.filePath, templateId, file.wordsCount || 0);
-  
-  // Remove markdown temporário
-  removeTemporaryMarkdown(file.fileHash);
-  
-  return {
-    fileId: file.id,
-    filePath: file.filePath,
-    success: true,
-    skipped: false,
-  };
 }
 
 async function main() {
@@ -109,6 +128,35 @@ async function main() {
         `\r📊 Progresso: ${stats.completed}/${stats.total} (${progress}%) | ` +
         `Em processamento: ${stats.inProgress} | Falhas: ${stats.failed}`
       );
+    },
+    onTaskFailed: async (taskId, errorMessage) => {
+      // Extrai o fileId do taskId (formato: classify-{fileId})
+      const match = taskId.match(/^classify-(.+)$/);
+      if (match) {
+        const fileId = match[1];
+        try {
+          // Busca o arquivo pelo ID
+          const file = await db
+            .select()
+            .from(documentFiles)
+            .where(eq(documentFiles.id, fileId))
+            .limit(1);
+          
+          if (file[0]) {
+            // Marca como rejeitado após todas as tentativas falharem
+            await markFileRejected(file[0].filePath, `Falha na classificação após múltiplas tentativas: ${errorMessage}`);
+            console.error(`[POOL] ✅ Arquivo marcado como rejeitado: ${file[0].fileName}`);
+            console.error(`[POOL]    Motivo: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}`);
+          }
+        } catch (rejectError) {
+          console.error(`[POOL] ❌ ERRO ao marcar como rejeitado (fileId: ${fileId}): ${rejectError}`);
+          if (process.env.DEBUG === 'true' && rejectError instanceof Error) {
+            console.error(`[POOL]    Stack: ${rejectError.stack}`);
+          }
+        }
+      } else {
+        console.error(`[POOL] ⚠️  Não foi possível extrair fileId do taskId: ${taskId}`);
+      }
     },
   });
 

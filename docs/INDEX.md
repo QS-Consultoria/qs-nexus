@@ -19,7 +19,8 @@ docs/
 │
 ├── guides/                     # Guias de Uso
 │   ├── paralelizacao.md       # Guia de paralelização e performance
-│   └── classificacao.md       # Guia de classificação de documentos
+│   ├── classificacao.md       # Guia de classificação de documentos
+│   └── troubleshooting.md    # Guia de troubleshooting e scripts utilitários
 │
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
@@ -83,6 +84,13 @@ Guia de classificação de documentos:
 - Logging de progresso
 - Tratamento de erros
 
+### [troubleshooting.md](./guides/troubleshooting.md)
+Guia de troubleshooting e scripts utilitários:
+- Problemas comuns e soluções
+- Scripts utilitários para correção de status
+- Correções implementadas no processamento e classificação
+- Casos de uso e exemplos
+
 ## Referência Técnica
 
 ### [concurrency-pool.md](./reference/concurrency-pool.md)
@@ -112,7 +120,8 @@ Documentação de Worker Threads:
 1. **Arquitetura**: Consulte [ARQUITETURA.md](./architecture/ARQUITETURA.md)
 2. **Dados**: Consulte [DADOS.md](./architecture/DADOS.md)
 3. **Paralelização**: Leia [paralelizacao.md](./guides/paralelizacao.md)
-4. **Referência**: Use [reference/](./reference/) para detalhes técnicos
+4. **Troubleshooting**: Consulte [troubleshooting.md](./guides/troubleshooting.md)
+5. **Referência**: Use [reference/](./reference/) para detalhes técnicos
 
 ### Para Otimização
 
@@ -141,6 +150,16 @@ Ver [paralelizacao.md](./guides/paralelizacao.md) para detalhes.
 - ✅ **Schema Correto**: Todos os campos obrigatórios para compatibilidade com API
 
 Ver [classificacao.md](./guides/classificacao.md) para detalhes.
+
+### Correções de Processamento e Classificação (2024)
+
+- ✅ **Tratamento de Erros**: Arquivos que falharem são automaticamente marcados como rejeitados
+- ✅ **Detecção de Limbo**: Arquivos em `processing` sem markdown são detectados e reprocessados
+- ✅ **Scripts Utilitários**: Novos scripts para correção de status e limpeza de arquivos órfãos
+- ✅ **Logs Detalhados**: Logs melhorados para debug e identificação de problemas
+- ✅ **Callback onTaskFailed**: Implementado em todos os scripts para tratamento de falhas
+
+Ver [troubleshooting.md](./guides/troubleshooting.md) para detalhes.
 
 ## Links Úteis
 

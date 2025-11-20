@@ -77,7 +77,21 @@ npm run rag:status
 
 # Reprocessar um arquivo específico
 npm run rag:reprocess "./list-docx/01. Trabalhista/documento.docx"
+
+# Investigar arquivos em processing
+npm run rag:investigate
+
+# Corrigir status de arquivos com template
+npm run rag:fix-status
+
+# Resetar arquivos sem markdown para pending
+npm run rag:reset-missing
+
+# Marcar arquivos no limbo como rejeitados
+npm run rag:reject-failed
 ```
+
+Para mais detalhes sobre troubleshooting e scripts utilitários, consulte [docs/guides/troubleshooting.md](./docs/guides/troubleshooting.md).
 
 ## Estrutura do Projeto
 

@@ -97,6 +97,8 @@ O pipeline atual segue os seguintes passos:
 - [ARQUITETURA.md](./architecture/ARQUITETURA.md) - Arquitetura detalhada
 - [DADOS.md](./architecture/DADOS.md) - Estrutura de dados
 - [paralelizacao.md](./guides/paralelizacao.md) - Guia de paralelização
+- [classificacao.md](./guides/classificacao.md) - Guia de classificação
+- [troubleshooting.md](./guides/troubleshooting.md) - Guia de troubleshooting e scripts utilitários
 - [INDEX.md](./INDEX.md) - Índice completo da documentação
 
 ## Notas Importantes

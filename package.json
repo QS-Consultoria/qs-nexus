@@ -12,6 +12,10 @@
     "rag:store": "tsx scripts/store-embeddings.ts",
     "rag:status": "tsx scripts/generate-status-report.ts",
     "rag:reprocess": "tsx scripts/reprocess-file.ts",
+    "rag:investigate": "tsx scripts/investigate-processing.ts",
+    "rag:fix-status": "tsx scripts/fix-processing-status.ts",
+    "rag:reset-missing": "tsx scripts/reset-missing-markdown.ts",
+    "rag:reject-failed": "tsx scripts/reject-failed-processing.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio"
