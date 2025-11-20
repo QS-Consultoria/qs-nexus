@@ -18,7 +18,8 @@ docs/
 │   └── DADOS.md               # Estrutura de dados e schema
 │
 ├── guides/                     # Guias de Uso
-│   └── paralelizacao.md       # Guia de paralelização e performance
+│   ├── paralelizacao.md       # Guia de paralelização e performance
+│   └── classificacao.md       # Guia de classificação de documentos
 │
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
@@ -75,6 +76,13 @@ Guia de paralelização e performance:
 - Rate limiting
 - Troubleshooting
 
+### [classificacao.md](./guides/classificacao.md)
+Guia de classificação de documentos:
+- Decisões de design (envio como texto, truncamento, validação)
+- Limitações da API e soluções implementadas
+- Logging de progresso
+- Tratamento de erros
+
 ## Referência Técnica
 
 ### [concurrency-pool.md](./reference/concurrency-pool.md)
@@ -123,6 +131,16 @@ Documentação de Worker Threads:
 - ✅ **Progress Tracking**: Acompanhamento de progresso em tempo real
 
 Ver [paralelizacao.md](./guides/paralelizacao.md) para detalhes.
+
+### Classificação (2024)
+
+- ✅ **Envio como Texto Direto**: Solução para limitação da API (não suporta arquivos de texto)
+- ✅ **Truncamento Inteligente**: Tratamento de documentos grandes mantendo início e fim
+- ✅ **Validação de Respostas**: Detecção e parada imediata se IA retornar dados vazios
+- ✅ **Logging de Progresso**: Acompanhamento de início/fim de cada classificação
+- ✅ **Schema Correto**: Todos os campos obrigatórios para compatibilidade com API
+
+Ver [classificacao.md](./guides/classificacao.md) para detalhes.
 
 ## Links Úteis
 

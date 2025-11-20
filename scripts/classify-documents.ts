@@ -57,8 +57,13 @@ async function classifyDocumentTask(file: InferSelectModel<typeof documentFiles>
     };
   }
 
-  // Classifica o documento
-  const classification = await classifyDocument(markdown);
+  // Loga início da classificação do documento
+  console.log(`\n📝 Classificando: ${file.filePath}`);
+
+  // Classifica o documento com callback de progresso
+  const classification = await classifyDocument(markdown, (message) => {
+    console.log(`  ${message}`);
+  });
   
   // Cria TemplateDocument
   const templateDoc = createTemplateDocument(classification, markdown, file.id);

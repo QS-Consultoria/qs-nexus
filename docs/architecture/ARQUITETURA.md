@@ -53,10 +53,16 @@ Sistema de tracking que evita reprocessamento:
 
 ### 3. Classifier (`lib/services/classifier.ts`)
 
-- **Modelo**: GPT-4o-mini via AI SDK
+- **Modelo**: GPT-5 via AI SDK
 - **Output**: TemplateDocument completo
 - **Metadados**: docType, area, jurisdiction, complexity, tags, summary, qualityScore
 - **Classificação Automática**: GOLD (>60) e SILVER (56-60)
+- **Truncamento Inteligente**: Trunca documentos grandes mantendo início e fim
+- **Validação de Respostas**: Detecta e para processamento se IA retornar dados vazios
+- **Logging de Progresso**: Callbacks para acompanhar início/fim de cada classificação
+- **Tratamento de Erros**: Retry automático para rate limits e fallback para documentos grandes
+
+Ver [Guia de Classificação](../guides/classificacao.md) para detalhes completos sobre decisões de design e limitações.
 
 ### 4. Chunker (`lib/services/chunker.ts`)
 

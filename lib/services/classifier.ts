@@ -147,8 +147,20 @@ Analise o documento fornecido e extraia as seguintes informações:
 
 Use apenas as informações presentes no documento. Seja preciso e objetivo.`;
 
+/**
+ * Classifica um documento jurídico usando IA.
+ * 
+ * @param markdown - Conteúdo do documento em formato Markdown
+ * @param onProgress - Callback opcional para logar progresso da classificação
+ * @returns Resultado da classificação com metadados estruturados
+ * 
+ * @note Para logs mais detalhados (ex: progresso por campo), considere usar
+ * `streamObject` do AI SDK no futuro, que permite acompanhar o progresso
+ * em tempo real conforme cada campo é gerado pela IA.
+ */
 export async function classifyDocument(
-  markdown: string
+  markdown: string,
+  onProgress?: (message: string) => void
 ): Promise<ClassificationResult> {
   // Estima tokens e trunca se necessário ANTES de enviar
   const systemPromptTokens = estimateTokens(SYSTEM_PROMPT);
@@ -163,6 +175,9 @@ export async function classifyDocument(
     console.warn(`⚠️  Documento muito grande (${markdownTokens} tokens), truncando para ${availableTokens} tokens`);
     processedMarkdown = truncateMarkdown(markdown, availableTokens);
   }
+
+  // Loga início da classificação
+  onProgress?.('⏳ Iniciando classificação...');
 
   try {
     const { object } = await generateObject({
@@ -191,12 +206,15 @@ export async function classifyDocument(
     // Valida se a classificação não está vazia
     validateClassification(result, processedMarkdown);
 
+    // Loga fim da classificação
+    onProgress?.('✅ Classificação concluída');
+
     return result;
   } catch (error) {
     // Retry logic para rate limit
     if (error instanceof Error && error.message.includes('rate limit')) {
       await new Promise(resolve => setTimeout(resolve, 5000));
-      return classifyDocument(markdown);
+      return classifyDocument(markdown, onProgress);
     }
     
     // Fallback para erros de limite de tokens (mesmo após truncamento)
@@ -238,6 +256,9 @@ export async function classifyDocument(
 
         // Valida se a classificação não está vazia
         validateClassification(fallbackResult, fallbackMarkdown);
+
+        // Loga fim da classificação (fallback)
+        onProgress?.('✅ Classificação concluída');
 
         return fallbackResult;
       } catch (fallbackError) {

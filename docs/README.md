@@ -35,11 +35,14 @@ O pipeline atual segue os seguintes passos:
 
 ### 3. Classificação (`npm run rag:classify`)
 
-- Usa AI SDK com GPT-4o-mini para classificar
+- Usa AI SDK com GPT-5 para classificar
 - Gera TemplateDocument completo com metadados:
   - Tipo de documento, área, jurisdição, complexidade
   - Tags, resumo, qualidade
   - Classificação GOLD/SILVER automática
+- Truncamento inteligente para documentos grandes
+- Validação de respostas vazias
+- Logging de progresso em tempo real
 
 ### 4. Chunking (`npm run rag:chunk`)
 
