@@ -30,9 +30,9 @@ export interface ClassificationResult {
   sections?: Array<{ name: string; role: string }>;
 }
 
-// Limite conservador de tokens (100k tokens, deixando espaço para prompt e resposta)
-// GPT-5 suporta até 128k tokens de contexto, mas precisamos reservar espaço para o prompt e resposta
-const MAX_INPUT_TOKENS = 100000;
+// Limite otimizado de tokens (18k tokens) - reduzido para forçar extração inteligente
+// Documentos grandes terão apenas partes relevantes extraídas antes da classificação
+const MAX_INPUT_TOKENS = 18000;
 
 /**
  * Estima tokens (aproximação: 1 token ≈ 4 caracteres para português)
@@ -84,6 +84,89 @@ function validateClassification(result: ClassificationResult, markdownPreview: s
 }
 
 /**
+ * Extrai apenas as partes relevantes do markdown para classificação
+ * Reduz drasticamente o uso de tokens mantendo informações essenciais
+ */
+function extractClassificationRelevantContent(markdown: string): string {
+  const lines = markdown.split('\n');
+  const extracted: string[] = [];
+  
+  // 1. Primeiras 2000-3000 caracteres (título, introdução, cabeçalho)
+  const headerChars = 3000;
+  let headerContent = '';
+  let charCount = 0;
+  let headerEndLine = 0;
+  
+  for (let i = 0; i < lines.length && charCount < headerChars; i++) {
+    const line = lines[i];
+    charCount += line.length + 1; // +1 para newline
+    headerEndLine = i;
+    headerContent += line + '\n';
+  }
+  
+  extracted.push(headerContent.trim());
+  
+  // 2. Estrutura de seções (todos os headers #, ##, ###)
+  const sectionHeaders: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const headerMatch = line.match(/^(#{1,3})\s+/);
+    if (headerMatch) {
+      const headerLevel = headerMatch[1].length;
+      sectionHeaders.push(line);
+      // Inclui primeiros 500 caracteres após cada header principal
+      let sectionContent = '';
+      let sectionCharCount = 0;
+      for (let j = i + 1; j < lines.length && sectionCharCount < 500; j++) {
+        const nextLine = lines[j];
+        const nextLineTrimmed = nextLine.trim();
+        // Para no próximo header de nível igual ou superior
+        const nextHeaderMatch = nextLineTrimmed.match(/^(#{1,3})\s+/);
+        if (nextHeaderMatch && nextHeaderMatch[1].length <= headerLevel) {
+          break;
+        }
+        sectionCharCount += nextLine.length + 1;
+        sectionContent += nextLine + '\n';
+      }
+      if (sectionContent.trim()) {
+        sectionHeaders.push(sectionContent.trim());
+      }
+    }
+  }
+  
+  if (sectionHeaders.length > 0) {
+    extracted.push('\n## Estrutura de Seções:\n');
+    extracted.push(sectionHeaders.join('\n\n'));
+  }
+  
+  // 3. Últimos 2000-3000 caracteres (conclusão, pedidos)
+  const footerChars = 3000;
+  let footerContent = '';
+  charCount = 0;
+  
+  for (let i = lines.length - 1; i > headerEndLine && charCount < footerChars; i--) {
+    const line = lines[i];
+    charCount += line.length + 1;
+    footerContent = line + '\n' + footerContent;
+  }
+  
+  if (footerContent.trim()) {
+    extracted.push('\n## Conclusão/Pedidos:\n');
+    extracted.push(footerContent.trim());
+  }
+  
+  const result = extracted.join('\n\n');
+  
+  // Se o resultado ainda for muito grande, aplica truncamento adicional
+  const resultTokens = estimateTokens(result);
+  if (resultTokens > MAX_INPUT_TOKENS * 0.8) {
+    return truncateMarkdown(result, Math.floor(MAX_INPUT_TOKENS * 0.8));
+  }
+  
+  return result;
+}
+
+/**
  * Trunca markdown de forma inteligente, mantendo início e fim
  */
 function truncateMarkdown(markdown: string, maxTokens: number): string {
@@ -118,34 +201,20 @@ function truncateMarkdown(markdown: string, maxTokens: number): string {
 
 const SYSTEM_PROMPT = `Você é um especialista em classificação de documentos jurídicos brasileiros.
 
-IMPORTANTE: O documento fornecido está em formato Markdown (texto plano com formatação Markdown).
-Se o documento contiver "[... conteúdo truncado por tamanho ...]", significa que foi truncado por ser muito extenso.
-Nesse caso, baseie sua análise nas partes visíveis (início e fim do documento).
+O documento está em Markdown. Se contiver "[... conteúdo truncado ...]", baseie-se nas partes visíveis.
 
-Analise o documento fornecido e extraia as seguintes informações:
+Extraia:
+1. **Tipo**: petição inicial, contestação, recurso, parecer, contrato, modelo genérico, ou outro
+2. **Área**: civil, trabalhista, tributário, empresarial, consumidor, penal, administrativo, previdenciário, ou outro
+3. **Jurisdição**: BR, TRT1, TJSP, etc.
+4. **Complexidade**: simples, médio, complexo
+5. **Tags**: tags relevantes (ex: danos_morais, plano_de_saude)
+6. **Resumo**: 2-3 linhas otimizado para busca semântica
+7. **Qualidade**: 0-100 (clareza, estrutura, risco de teses frágeis)
+8. **Título**: extraia ou crie título descritivo
+9. **Seções**: seções principais e seus papéis (intro, fundamentacao, pedido, fatos, direito, conclusao, outro)
 
-1. **Tipo de documento**: Identifique o tipo de peça jurídica (petição inicial, contestação, recurso, parecer, contrato, modelo genérico, ou outro)
-
-2. **Área de direito**: Classifique a área (civil, trabalhista, tributário, empresarial, consumidor, penal, administrativo, previdenciário, ou outro)
-
-3. **Jurisdição**: Identifique a jurisdição (BR, TRT1, TJSP, etc.)
-
-4. **Complexidade**: Avalie a complexidade (simples, médio, complexo)
-
-5. **Tags**: Extraia tags relevantes (ex: danos_morais, plano_de_saude, etc.)
-
-6. **Resumo**: Crie um resumo conciso de 2-3 linhas que capture a essência do documento, otimizado para busca semântica
-
-7. **Qualidade**: Avalie a qualidade do documento (0-100) considerando:
-   - Clareza da redação
-   - Estrutura do documento
-   - Risco de teses frágeis (quanto maior o risco, menor a nota)
-
-8. **Título**: Extraia ou crie um título descritivo
-
-9. **Seções**: Identifique as seções principais do documento e seus papéis
-
-Use apenas as informações presentes no documento. Seja preciso e objetivo.`;
+Seja preciso e objetivo.`;
 
 /**
  * Classifica um documento jurídico usando IA.
@@ -162,18 +231,28 @@ export async function classifyDocument(
   markdown: string,
   onProgress?: (message: string) => void
 ): Promise<ClassificationResult> {
+  // Extrai apenas partes relevantes para classificação (reduz drasticamente tokens)
+  const originalTokens = estimateTokens(markdown);
+  let processedMarkdown = extractClassificationRelevantContent(markdown);
+  const extractedTokens = estimateTokens(processedMarkdown);
+  const tokensSaved = originalTokens - extractedTokens;
+  
+  if (tokensSaved > 0) {
+    const savingsPercent = Math.round((tokensSaved / originalTokens) * 100);
+    onProgress?.(`💰 Economia de tokens: ${tokensSaved.toLocaleString()} (${savingsPercent}%)`);
+  }
+  
   // Estima tokens e trunca se necessário ANTES de enviar
   const systemPromptTokens = estimateTokens(SYSTEM_PROMPT);
   const userPromptTokens = estimateTokens('Analise o documento abaixo (formato Markdown) e classifique-o conforme as instruções.\n\n---\n\n');
   const reservedTokens = systemPromptTokens + userPromptTokens + 2000; // 2000 tokens para resposta
   const availableTokens = MAX_INPUT_TOKENS - reservedTokens;
   
-  let processedMarkdown = markdown;
-  const markdownTokens = estimateTokens(markdown);
+  const markdownTokens = estimateTokens(processedMarkdown);
   
   if (markdownTokens > availableTokens) {
-    console.warn(`⚠️  Documento muito grande (${markdownTokens} tokens), truncando para ${availableTokens} tokens`);
-    processedMarkdown = truncateMarkdown(markdown, availableTokens);
+    console.warn(`⚠️  Documento ainda grande após extração (${markdownTokens} tokens), truncando para ${availableTokens} tokens`);
+    processedMarkdown = truncateMarkdown(processedMarkdown, availableTokens);
   }
 
   // Loga início da classificação
@@ -181,7 +260,7 @@ export async function classifyDocument(
 
   try {
     const { object } = await generateObject({
-      model: openai('gpt-4o'),
+      model: openai('gpt-4o-mini'),
       schema: ClassificationSchema,
       messages: [
         {
@@ -228,7 +307,7 @@ export async function classifyDocument(
       
       // Tenta com versão ainda mais truncada (50% do limite original)
       const fallbackTokens = Math.floor(availableTokens * 0.5);
-      const fallbackMarkdown = truncateMarkdown(markdown, fallbackTokens);
+      const fallbackMarkdown = truncateMarkdown(processedMarkdown, fallbackTokens);
       
       try {
         const { object } = await generateObject({
