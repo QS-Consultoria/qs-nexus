@@ -1,12 +1,12 @@
 'use client'
 
-import { User, Search, Bell, Moon, Sun } from 'lucide-react'
+import { User, Bell, Moon, Sun } from 'lucide-react'
 import { LogoutButton } from './logout-button'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
-import { useState } from 'react'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 
 interface NavbarProps {
   userName?: string | null
@@ -14,25 +14,21 @@ interface NavbarProps {
 }
 
 export function Navbar({ userName, userEmail }: NavbarProps) {
-  const [darkMode, setDarkMode] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
-      
-      {/* Search Bar */}
-      <div className="relative hidden md:block flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search or type command..."
-          className="h-9 w-full pl-9 pr-20"
-        />
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </div>
 
       <div className="ml-auto flex items-center gap-2">
         {/* Dark mode toggle */}
@@ -40,9 +36,10 @@ export function Navbar({ userName, userEmail }: NavbarProps) {
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          onClick={() => setDarkMode(!darkMode)}
+          onClick={toggleTheme}
+          disabled={!mounted}
         >
-          {darkMode ? (
+          {mounted && theme === 'dark' ? (
             <Sun className="h-4 w-4" />
           ) : (
             <Moon className="h-4 w-4" />

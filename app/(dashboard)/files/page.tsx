@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/select'
 import { FileListSkeleton } from '@/components/loading-skeletons'
 import { toast } from 'react-hot-toast'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Search, X } from 'lucide-react'
+import { useDebounce } from '@/hooks/use-debounce'
 
 interface File {
   id: string
@@ -25,12 +26,49 @@ interface File {
   updatedAt: Date | null
 }
 
+const AREAS = [
+  { value: 'all', label: 'Todas as Áreas' },
+  { value: 'civil', label: 'Civil' },
+  { value: 'trabalhista', label: 'Trabalhista' },
+  { value: 'tributario', label: 'Tributário' },
+  { value: 'empresarial', label: 'Empresarial' },
+  { value: 'consumidor', label: 'Consumidor' },
+  { value: 'penal', label: 'Penal' },
+  { value: 'administrativo', label: 'Administrativo' },
+  { value: 'previdenciario', label: 'Previdenciário' },
+  { value: 'outro', label: 'Outro' },
+]
+
+const DOC_TYPES = [
+  { value: 'all', label: 'Todos os Tipos' },
+  { value: 'peticao_inicial', label: 'Petição Inicial' },
+  { value: 'contestacao', label: 'Contestação' },
+  { value: 'recurso', label: 'Recurso' },
+  { value: 'parecer', label: 'Parecer' },
+  { value: 'contrato', label: 'Contrato' },
+  { value: 'modelo_generico', label: 'Modelo Genérico' },
+  { value: 'outro', label: 'Outro' },
+]
+
+const SORT_OPTIONS = [
+  { value: 'updatedAt', label: 'Data de Atualização' },
+  { value: 'fileName', label: 'Nome do Arquivo' },
+  { value: 'status', label: 'Status' },
+]
+
 export default function FilesPage() {
   const [files, setFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [areaFilter, setAreaFilter] = useState<string>('all')
+  const [docTypeFilter, setDocTypeFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('updatedAt')
+  const [sortOrder, setSortOrder] = useState<string>('desc')
+
+  const debouncedSearch = useDebounce(searchQuery, 500)
 
   useEffect(() => {
     async function fetchFiles() {
@@ -40,9 +78,20 @@ export default function FilesPage() {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: '20',
+          sortBy,
+          sortOrder,
         })
         if (statusFilter !== 'all') {
           params.append('status', statusFilter)
+        }
+        if (areaFilter !== 'all') {
+          params.append('area', areaFilter)
+        }
+        if (docTypeFilter !== 'all') {
+          params.append('docType', docTypeFilter)
+        }
+        if (debouncedSearch) {
+          params.append('search', debouncedSearch)
         }
 
         const response = await fetch(`/api/documents?${params}`)
@@ -65,7 +114,24 @@ export default function FilesPage() {
     }
 
     fetchFiles()
-  }, [page, statusFilter])
+  }, [page, statusFilter, areaFilter, docTypeFilter, debouncedSearch, sortBy, sortOrder])
+
+  const clearFilters = () => {
+    setStatusFilter('all')
+    setAreaFilter('all')
+    setDocTypeFilter('all')
+    setSearchQuery('')
+    setSortBy('updatedAt')
+    setSortOrder('desc')
+  }
+
+  const hasActiveFilters =
+    statusFilter !== 'all' ||
+    areaFilter !== 'all' ||
+    docTypeFilter !== 'all' ||
+    searchQuery !== '' ||
+    sortBy !== 'updatedAt' ||
+    sortOrder !== 'desc'
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
@@ -76,14 +142,34 @@ export default function FilesPage() {
         </p>
       </div>
 
-      <Card>
+      <Card className="border bg-card">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Filtros</CardTitle>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-2" />
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {/* Busca por título */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Filtro por Status */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -93,6 +179,59 @@ export default function FilesPage() {
                 <SelectItem value="completed">Concluídos</SelectItem>
                 <SelectItem value="failed">Falhados</SelectItem>
                 <SelectItem value="rejected">Rejeitados</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filtro por Área */}
+            <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Área" />
+              </SelectTrigger>
+              <SelectContent>
+                {AREAS.map(area => (
+                  <SelectItem key={area.value} value={area.value}>
+                    {area.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Filtro por Tipo */}
+            <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {DOC_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Ordenação */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Ordem */}
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ordem" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asc">Crescente</SelectItem>
+                <SelectItem value="desc">Decrescente</SelectItem>
               </SelectContent>
             </Select>
           </div>

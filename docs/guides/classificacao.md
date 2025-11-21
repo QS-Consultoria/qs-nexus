@@ -4,7 +4,7 @@ Este guia documenta o processo de classificação de documentos jurídicos usand
 
 ## Visão Geral
 
-O sistema de classificação utiliza o AI SDK com modelos OpenAI (GPT-5) para extrair metadados estruturados de documentos jurídicos em formato Markdown. A classificação gera um `TemplateDocument` completo com informações como tipo de documento, área jurídica, complexidade, tags, resumo e score de qualidade.
+O sistema de classificação utiliza o AI SDK com modelos OpenAI (GPT-4-mini) para extrair metadados estruturados de documentos jurídicos em formato Markdown. A classificação gera um `TemplateDocument` completo com informações como tipo de documento, área jurídica, complexidade, tags, resumo e score de qualidade.
 
 ## Componente Principal
 

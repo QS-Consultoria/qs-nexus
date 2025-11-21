@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { FileDetailsSkeleton } from '@/components/loading-skeletons'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Edit, Save, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 
@@ -54,6 +55,10 @@ export default function FileDetailsPage() {
   const [template, setTemplate] = useState<Template | null>(null)
   const [chunks, setChunks] = useState<Chunk[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isEditingMarkdown, setIsEditingMarkdown] = useState(false)
+  const [editedMarkdown, setEditedMarkdown] = useState('')
+  const [isSavingMarkdown, setIsSavingMarkdown] = useState(false)
+  const [isReprocessing, setIsReprocessing] = useState(false)
 
   useEffect(() => {
     async function fetchFileDetails() {
@@ -69,6 +74,9 @@ export default function FileDetailsPage() {
         setFile(data.file)
         setTemplate(data.template)
         setChunks(data.chunks || [])
+        if (data.template?.markdown) {
+          setEditedMarkdown(data.template.markdown)
+        }
       } catch (error) {
         console.error('Error fetching file details:', error)
         toast.error('Erro ao carregar detalhes do arquivo')
@@ -82,9 +90,71 @@ export default function FileDetailsPage() {
     }
   }, [fileId])
 
+  const handleEditMarkdown = () => {
+    if (template?.markdown) {
+      setEditedMarkdown(template.markdown)
+      setIsEditingMarkdown(true)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    if (template?.markdown) {
+      setEditedMarkdown(template.markdown)
+    }
+    setIsEditingMarkdown(false)
+  }
+
+  const handleSaveMarkdown = async () => {
+    if (!template) return
+
+    setIsSavingMarkdown(true)
+    try {
+      const response = await fetch(`/api/documents/${fileId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ markdown: editedMarkdown }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao salvar markdown')
+      }
+
+      setTemplate({ ...template, markdown: editedMarkdown })
+      setIsEditingMarkdown(false)
+      toast.success('Markdown atualizado com sucesso')
+    } catch (error) {
+      console.error('Error saving markdown:', error)
+      toast.error('Erro ao salvar markdown')
+    } finally {
+      setIsSavingMarkdown(false)
+    }
+  }
+
   const handleReprocess = async () => {
-    // TODO: Implementar reprocessamento
-    toast('Funcionalidade de reprocessamento será implementada em breve')
+    setIsReprocessing(true)
+    try {
+      const response = await fetch(`/api/documents/${fileId}/reprocess`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Erro ao reprocessar arquivo')
+      }
+
+      toast.success('Reprocessamento iniciado. O arquivo será processado em segundo plano.')
+      // Recarregar dados após um delay
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error('Error reprocessing file:', error)
+      toast.error(error instanceof Error ? error.message : 'Erro ao reprocessar arquivo')
+    } finally {
+      setIsReprocessing(false)
+    }
   }
 
   if (isLoading) {
@@ -167,16 +237,25 @@ export default function FileDetailsPage() {
                 <p className="text-sm text-red-600">{file.rejectedReason}</p>
               </div>
             )}
-            {file.status === 'failed' && (
+            {file.status === 'completed' && (
               <ConfirmDialog
                 trigger={
-                  <Button variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reprocessar
+                  <Button variant="outline" disabled={isReprocessing}>
+                    {isReprocessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Reprocessando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Reprocessar
+                      </>
+                    )}
                   </Button>
                 }
                 title="Reprocessar arquivo"
-                description="Tem certeza que deseja reprocessar este arquivo? O processamento atual será substituído."
+                description="Tem certeza que deseja reprocessar este arquivo? O processamento atual será substituído. Esta ação irá reclassificar o documento, regenerar os chunks e embeddings."
                 confirmText="Reprocessar"
                 cancelText="Cancelar"
                 onConfirm={handleReprocess}
@@ -229,13 +308,58 @@ export default function FileDetailsPage() {
       {template && (
         <Card>
           <CardHeader>
-            <CardTitle>Preview do Markdown</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Markdown</CardTitle>
+              {!isEditingMarkdown ? (
+                <Button variant="outline" size="sm" onClick={handleEditMarkdown}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                    disabled={isSavingMarkdown}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveMarkdown}
+                    disabled={isSavingMarkdown}
+                  >
+                    {isSavingMarkdown ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Salvar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <pre className="text-xs bg-muted p-4 rounded-lg overflow-auto max-h-96">
-              {template.markdown.substring(0, 2000)}
-              {template.markdown.length > 2000 && '...'}
-            </pre>
+            {isEditingMarkdown ? (
+              <Textarea
+                value={editedMarkdown}
+                onChange={e => setEditedMarkdown(e.target.value)}
+                className="font-mono text-xs min-h-[400px]"
+                placeholder="Digite o markdown aqui..."
+              />
+            ) : (
+              <pre className="text-xs bg-muted p-4 rounded-lg overflow-auto max-h-[600px] whitespace-pre-wrap">
+                {template.markdown}
+              </pre>
+            )}
           </CardContent>
         </Card>
       )}

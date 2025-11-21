@@ -38,17 +38,17 @@ export function AppSidebar({ onLinkClick }: AppSidebarProps) {
   const pathname = usePathname()
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" className="border-r">
+      <SidebarHeader className="p-4 pb-6">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="h-auto py-3">
               <Link href="/dashboard" onClick={onLinkClick}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Scale className="size-4" />
+                <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
+                  <Scale className="size-5" />
                 </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">LegalWise</span>
+                <div className="flex flex-col gap-0.5 leading-tight">
+                  <span className="font-semibold text-base">LegalWise</span>
                   <span className="text-xs text-muted-foreground">RAG Dashboard</span>
                 </div>
               </Link>
@@ -56,20 +56,27 @@ export function AppSidebar({ onLinkClick }: AppSidebarProps) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold">
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {navigation.map(item => {
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                 const Icon = item.icon
                 return (
                   <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      size="default"
+                      className="h-11 px-3 text-sm"
+                    >
                       <Link href={item.href} onClick={onLinkClick}>
-                        <Icon />
-                        <span>{item.name}</span>
+                        <Icon className="size-5" />
+                        <span className="font-medium">{item.name}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -79,11 +86,11 @@ export function AppSidebar({ onLinkClick }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="p-4 pt-6 border-t">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3 text-xs">
-              <div className="font-medium">Sistema RAG</div>
+            <div className="flex flex-col gap-1.5 rounded-lg bg-muted/50 p-4 text-xs w-full">
+              <div className="font-semibold text-sm">Sistema RAG</div>
               <div className="text-muted-foreground">Versão 1.0.0</div>
             </div>
           </SidebarMenuItem>

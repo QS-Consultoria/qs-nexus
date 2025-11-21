@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from '@/components/providers/session-provider'
+import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Toaster } from 'react-hot-toast'
 import { ErrorBoundary } from '@/components/error-boundary'
 
@@ -11,35 +12,42 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <ErrorBoundary>
-          <Providers>
-            {children}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: 'var(--background)',
-                  color: 'var(--foreground)',
-                  border: '1px solid var(--border)',
-                },
-                success: {
-                  iconTheme: {
-                    primary: 'var(--primary)',
-                    secondary: 'var(--primary-foreground)',
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Providers>
+              {children}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: 'var(--background)',
+                    color: 'var(--foreground)',
+                    border: '1px solid var(--border)',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: 'var(--destructive)',
-                    secondary: 'var(--destructive-foreground)',
+                  success: {
+                    iconTheme: {
+                      primary: 'var(--primary)',
+                      secondary: 'var(--primary-foreground)',
+                    },
                   },
-                },
-              }}
-            />
-          </Providers>
+                  error: {
+                    iconTheme: {
+                      primary: 'var(--destructive)',
+                      secondary: 'var(--destructive-foreground)',
+                    },
+                  },
+                }}
+              />
+            </Providers>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

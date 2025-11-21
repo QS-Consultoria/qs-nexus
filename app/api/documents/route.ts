@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db/index'
 import { documentFiles, templates } from '@/lib/db/schema/rag'
-import { eq, desc, and, sql } from 'drizzle-orm'
+import { eq, desc, asc, and, or, ilike, sql } from 'drizzle-orm'
 
 // Cache por 10 segundos (listagem muda frequentemente)
 export const revalidate = 10
@@ -14,9 +14,50 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const area = searchParams.get('area')
     const docType = searchParams.get('docType')
+    const search = searchParams.get('search') || ''
+    const sortBy = searchParams.get('sortBy') || 'updatedAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
 
     const offset = (page - 1) * limit
 
+    // Construir condições WHERE
+    const conditions = []
+
+    if (status && status !== 'all') {
+      conditions.push(eq(documentFiles.status, status as any))
+    }
+
+    if (area && area !== 'all') {
+      conditions.push(eq(templates.area, area as any))
+    }
+
+    if (docType && docType !== 'all') {
+      conditions.push(eq(templates.docType, docType as any))
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(documentFiles.fileName, `%${search}%`),
+          ilike(templates.title, `%${search}%`)
+        ) as any
+      )
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+    // Determinar ordenação
+    let orderByClause
+    if (sortBy === 'fileName') {
+      orderByClause = sortOrder === 'asc' ? asc(documentFiles.fileName) : desc(documentFiles.fileName)
+    } else if (sortBy === 'status') {
+      orderByClause = sortOrder === 'asc' ? asc(documentFiles.status) : desc(documentFiles.status)
+    } else {
+      // default: updatedAt
+      orderByClause = sortOrder === 'asc' ? asc(documentFiles.updatedAt) : desc(documentFiles.updatedAt)
+    }
+
+    // Query base
     let query = db
       .select({
         id: documentFiles.id,
@@ -33,25 +74,20 @@ export async function GET(request: NextRequest) {
       })
       .from(documentFiles)
       .leftJoin(templates, eq(documentFiles.id, templates.documentFileId))
-      .orderBy(desc(documentFiles.updatedAt))
 
-    if (status) {
-      query = query.where(eq(documentFiles.status, status as any)) as any
+    if (whereClause) {
+      query = query.where(whereClause) as any
     }
 
+    // Aplicar ordenação
+    query = query.orderBy(orderByClause) as any
+
+    // Executar query
     const allFiles = await query
     const total = allFiles.length
 
-    // Aplicar filtros adicionais e paginação
-    let filteredFiles = allFiles
-    if (area) {
-      filteredFiles = filteredFiles.filter(f => f.templateArea === area)
-    }
-    if (docType) {
-      filteredFiles = filteredFiles.filter(f => f.templateDocType === docType)
-    }
-
-    const paginatedFiles = filteredFiles.slice(offset, offset + limit)
+    // Aplicar paginação
+    const paginatedFiles = allFiles.slice(offset, offset + limit)
 
     return NextResponse.json({
       files: paginatedFiles,
