@@ -10,7 +10,6 @@ import { useChat } from 'ai/react'
 import { cn } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export function ChatInterface() {
   const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
@@ -74,31 +73,20 @@ export function ChatInterface() {
             </p>
           </div>
           {messages.length > 0 && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="outline" size="sm" disabled={isLoading}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Limpar
-                        </Button>
-                      }
-                      title="Limpar conversa"
-                      description="Tem certeza que deseja limpar toda a conversa? Esta ação não pode ser desfeita."
-                      confirmText="Limpar"
-                      cancelText="Cancelar"
-                      variant="destructive"
-                      onConfirm={handleClear}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Limpar histórico de conversa</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <ConfirmDialog
+              trigger={
+                <Button variant="outline" size="sm" disabled={isLoading}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Limpar
+                </Button>
+              }
+              title="Limpar conversa"
+              description="Tem certeza que deseja limpar toda a conversa? Esta ação não pode ser desfeita."
+              confirmText="Limpar"
+              cancelText="Cancelar"
+              variant="destructive"
+              onConfirm={handleClear}
+            />
           )}
         </div>
       </div>

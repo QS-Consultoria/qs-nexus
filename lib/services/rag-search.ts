@@ -8,6 +8,14 @@ if (!process.env.DATABASE_URL) {
 // Client postgres para queries SQL raw (necessário para operador <=> do pgvector)
 const sqlClient = postgres(process.env.DATABASE_URL)
 
+/**
+ * Formata um array de números como string de vetor PostgreSQL
+ * Exemplo: [1, 2, 3] -> "[1,2,3]"
+ */
+function formatVector(embedding: number[]): string {
+  return `[${embedding.join(',')}]`
+}
+
 export interface SimilarChunk {
   id: string
   templateId: string
@@ -35,11 +43,16 @@ export async function searchSimilarChunks(
 ): Promise<SimilarChunk[]> {
   // Gera embedding da query
   const queryEmbedding = await generateEmbedding(query)
+  
+  // Formata o embedding como string de vetor PostgreSQL
+  const vectorString = formatVector(queryEmbedding)
 
   // Busca chunks similares usando operador <=> (cosine distance)
   // Similaridade = 1 - (embedding <=> query_embedding)
   // Ordena por menor distância (maior similaridade)
-  const results = await sqlClient`
+  // Usa sql.unsafe para passar o vetor formatado corretamente
+  const results = await sqlClient.unsafe(
+    `
     SELECT 
       tc.id,
       tc.template_id as "templateId",
@@ -47,17 +60,19 @@ export async function searchSimilarChunks(
       tc.section,
       tc.role,
       tc.chunk_index as "chunkIndex",
-      1 - (tc.embedding <=> ${queryEmbedding}::vector) as similarity,
+      1 - (tc.embedding <=> $1::vector) as similarity,
       t.title as "templateTitle",
       t.doc_type as "templateDocType",
       t.area as "templateArea"
     FROM template_chunks tc
     JOIN templates t ON t.id = tc.template_id
     WHERE tc.embedding IS NOT NULL
-      AND 1 - (tc.embedding <=> ${queryEmbedding}::vector) >= ${minSimilarity}
-    ORDER BY tc.embedding <=> ${queryEmbedding}::vector
-    LIMIT ${limit}
-  `
+      AND 1 - (tc.embedding <=> $1::vector) >= $2
+    ORDER BY tc.embedding <=> $1::vector
+    LIMIT $3
+    `,
+    [vectorString, minSimilarity, limit]
+  )
 
   return results.map((row: any) => ({
     id: row.id,
@@ -93,11 +108,14 @@ export async function searchSimilarChunksWithFilters(
 
   // Gera embedding da query
   const queryEmbedding = await generateEmbedding(query)
+  
+  // Formata o embedding como string de vetor PostgreSQL
+  const vectorString = formatVector(queryEmbedding)
 
   // Constrói query SQL com filtros usando template literals do postgres
   // Usa sql.unsafe para queries complexas com pgvector
   let whereConditions = 'tc.embedding IS NOT NULL'
-  const params: any[] = [queryEmbedding, minSimilarity]
+  const params: any[] = [vectorString, minSimilarity]
 
   if (area) {
     whereConditions += ` AND t.area = $${params.length + 1}`
