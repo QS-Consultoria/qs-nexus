@@ -50,15 +50,12 @@ export function useProcessStream(jobId: string | null) {
 
     eventSource.onmessage = event => {
       try {
-        console.log('[SSE] Received event:', event.data)
         const processEvent: ProcessEvent = JSON.parse(event.data)
-        console.log('[SSE] Parsed event:', processEvent)
 
         switch (processEvent.type) {
           case 'progress':
             if (processEvent.data.fileName) {
               const fileName = processEvent.data.fileName
-              console.log(`[SSE] Progress update for ${fileName}:`, processEvent.data)
               setFiles(prev => {
                 const updated = {
                   ...prev,
@@ -80,16 +77,11 @@ export function useProcessStream(jobId: string | null) {
                       allFiles.length
                     : 0
                 setProgress(avgProgress)
-                console.log(`[SSE] Updated files state:`, updated)
                 return updated
               })
-            } else {
-              // Evento de progresso sem fileName (evento inicial)
-              console.log('[SSE] Progress event without fileName:', processEvent.data)
             }
             break
           case 'job-complete':
-            console.log('[SSE] Job complete event received')
             isClosingRef.current = true
             setStatus('completed')
             setJobComplete(true)
@@ -108,16 +100,13 @@ export function useProcessStream(jobId: string | null) {
                   }
                 }
               })
-              console.log('[SSE] Updated files to completed:', updated)
               return updated
             })
             // Fecha imediatamente para evitar reconexão
-            console.log('[SSE] Closing event source immediately after job complete')
             eventSource.close()
             eventSourceRef.current = null
             break
           case 'job-error':
-            console.log('[SSE] Job error event received')
             isClosingRef.current = true
             setStatus('error')
             setJobComplete(true)
@@ -125,7 +114,6 @@ export function useProcessStream(jobId: string | null) {
               setError(processEvent.data.error)
             }
             // Fecha imediatamente para evitar reconexão
-            console.log('[SSE] Closing event source immediately after job error')
             eventSource.close()
             eventSourceRef.current = null
             break
@@ -138,11 +126,9 @@ export function useProcessStream(jobId: string | null) {
     eventSource.onerror = (err) => {
       // Se já está fechando ou completo, ignora o erro
       if (isClosingRef.current || jobComplete) {
-        console.log('[SSE] Ignoring error - job is complete or closing')
         return
       }
       
-      console.error('[SSE] EventSource error:', err)
       // Verifica se o EventSource está realmente em erro ou apenas fechado
       if (eventSource.readyState === EventSource.CLOSED) {
         // Conexão foi fechada pelo servidor (normal após job-complete)

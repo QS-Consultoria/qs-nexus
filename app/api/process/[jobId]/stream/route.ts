@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { processingEvents } from '@/lib/services/processing-events'
+import { debugLog } from '@/lib/utils'
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string } }) {
   const jobId = params.jobId
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
         try {
           processingEvents.off(jobId, listener)
           controller.close()
-          console.log(`[SSE Stream] Closed stream for job ${jobId}`)
+          debugLog(`[SSE Stream] Closed stream for job ${jobId}`)
         } catch (error) {
           console.error('Error closing stream:', error)
         }
@@ -34,20 +35,20 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
       // Listener para eventos de processamento
       const listener = (event: any) => {
         if (isClosed) return
-        console.log(`[SSE Stream] Received event for job ${jobId}:`, event.type, event.data)
+        debugLog(`[SSE Stream] Received event for job ${jobId}:`, event.type, event.data)
         if (event.type === 'progress') {
           sendEvent('progress', event.data)
-          console.log(`[SSE Stream] Sent progress event for job ${jobId}`)
+          debugLog(`[SSE Stream] Sent progress event for job ${jobId}`)
         } else if (event.type === 'job-complete') {
           sendEvent('job-complete', event.data)
-          console.log(`[SSE Stream] Sent job-complete event for job ${jobId}`)
+          debugLog(`[SSE Stream] Sent job-complete event for job ${jobId}`)
           // Fecha o stream após conclusão
           setTimeout(() => {
             closeStream()
           }, 1000)
         } else if (event.type === 'job-error') {
           sendEvent('job-error', event.data)
-          console.log(`[SSE Stream] Sent job-error event for job ${jobId}`)
+          debugLog(`[SSE Stream] Sent job-error event for job ${jobId}`)
           // Fecha o stream após erro
           setTimeout(() => {
             closeStream()
@@ -56,31 +57,31 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
       }
 
       const streamStartTimestamp = new Date().toISOString()
-      console.log(`[SSE Stream] [${streamStartTimestamp}] Stream created for job ${jobId}`)
+      debugLog(`[SSE Stream] [${streamStartTimestamp}] Stream created for job ${jobId}`)
       
       // Obtém histórico de eventos antes de registrar o listener
       let history = processingEvents.getHistory(jobId)
       const initialHistorySize = history.length
-      console.log(`[SSE Stream] [${streamStartTimestamp}] Found ${initialHistorySize} events in history for job ${jobId}`)
+      debugLog(`[SSE Stream] [${streamStartTimestamp}] Found ${initialHistorySize} events in history for job ${jobId}`)
       if (initialHistorySize > 0) {
-        console.log(`[SSE Stream] [${streamStartTimestamp}] History events:`, history.map(e => ({ type: e.type, timestamp: 'stored' })))
+        debugLog(`[SSE Stream] [${streamStartTimestamp}] History events:`, history.map(e => ({ type: e.type, timestamp: 'stored' })))
       }
       
       // Envia eventos históricos diretamente através do SSE (uma única vez)
       let hasJobComplete = false
       if (history.length > 0) {
-        console.log(`[SSE Stream] [${streamStartTimestamp}] Replaying ${history.length} historical events for job ${jobId}`)
+        debugLog(`[SSE Stream] [${streamStartTimestamp}] Replaying ${history.length} historical events for job ${jobId}`)
         history.forEach((event, index) => {
           if (event.type === 'progress') {
             sendEvent('progress', event.data)
           } else if (event.type === 'job-complete') {
             sendEvent('job-complete', event.data)
             hasJobComplete = true
-            console.log(`[SSE Stream] [${streamStartTimestamp}] Found job-complete in history at index ${index}`)
+            debugLog(`[SSE Stream] [${streamStartTimestamp}] Found job-complete in history at index ${index}`)
           } else if (event.type === 'job-error') {
             sendEvent('job-error', event.data)
             hasJobComplete = true
-            console.log(`[SSE Stream] [${streamStartTimestamp}] Found job-error in history at index ${index}`)
+            debugLog(`[SSE Stream] [${streamStartTimestamp}] Found job-error in history at index ${index}`)
           }
         })
         
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
       // Registra listener APENAS para novos eventos (não replay histórico)
       processingEvents.on(jobId, listener, false)
       const listenerRegistrationTimestamp = new Date().toISOString()
-      console.log(`[SSE Stream] [${listenerRegistrationTimestamp}] Listener registered for job ${jobId}`)
+      debugLog(`[SSE Stream] [${listenerRegistrationTimestamp}] Listener registered for job ${jobId}`)
 
       // Verifica histórico novamente após um pequeno delay para capturar eventos que podem ter sido emitidos
       // durante a criação do stream (race condition)
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
         const updatedHistory = processingEvents.getHistory(jobId)
         const isComplete = processingEvents.isJobComplete(jobId)
         
-        console.log(`[SSE Stream] [${checkTimestamp}] Checking history again after delay for job ${jobId}:`, {
+        debugLog(`[SSE Stream] [${checkTimestamp}] Checking history again after delay for job ${jobId}:`, {
           initialSize: initialHistorySize,
           currentSize: updatedHistory.length,
           isComplete,
@@ -114,12 +115,12 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
         })
         
         if (updatedHistory.length > history.length) {
-          console.log(`[SSE Stream] [${checkTimestamp}] Found ${updatedHistory.length - history.length} new events in history after delay for job ${jobId}`)
+          debugLog(`[SSE Stream] [${checkTimestamp}] Found ${updatedHistory.length - history.length} new events in history after delay for job ${jobId}`)
           
           // Envia apenas os novos eventos que não foram enviados antes
           const newEvents = updatedHistory.slice(history.length)
           newEvents.forEach((event, index) => {
-            console.log(`[SSE Stream] [${checkTimestamp}] Sending new event ${index + 1}/${newEvents.length}:`, event.type)
+            debugLog(`[SSE Stream] [${checkTimestamp}] Sending new event ${index + 1}/${newEvents.length}:`, event.type)
             if (event.type === 'progress') {
               sendEvent('progress', event.data)
             } else if (event.type === 'job-complete') {
@@ -138,10 +139,10 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
           })
         } else if (isComplete && !hasJobComplete) {
           // Se o job está completo mas não encontramos no histórico inicial, verifica novamente
-          console.log(`[SSE Stream] [${checkTimestamp}] Job is complete but not found in initial history, checking again...`)
+          debugLog(`[SSE Stream] [${checkTimestamp}] Job is complete but not found in initial history, checking again...`)
           const completeEvent = updatedHistory.find(e => e.type === 'job-complete' || e.type === 'job-error')
           if (completeEvent) {
-            console.log(`[SSE Stream] [${checkTimestamp}] Found complete event on retry, sending:`, completeEvent.type)
+            debugLog(`[SSE Stream] [${checkTimestamp}] Found complete event on retry, sending:`, completeEvent.type)
             if (completeEvent.type === 'job-complete') {
               sendEvent('job-complete', completeEvent.data)
             } else {
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
           const retryHistory = processingEvents.getHistory(jobId)
           const retryIsComplete = processingEvents.isJobComplete(jobId)
           
-          console.log(`[SSE Stream] [${retryTimestamp}] Retry check for job-complete for job ${jobId}:`, {
+          debugLog(`[SSE Stream] [${retryTimestamp}] Retry check for job-complete for job ${jobId}:`, {
             historySize: retryHistory.length,
             isComplete: retryIsComplete,
             timeSinceStart: `${Date.now() - new Date(streamStartTimestamp).getTime()}ms`,
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
           if (retryIsComplete && !hasJobComplete) {
             const completeEvent = retryHistory.find(e => e.type === 'job-complete' || e.type === 'job-error')
             if (completeEvent) {
-              console.log(`[SSE Stream] [${retryTimestamp}] Found complete event on retry, sending:`, completeEvent.type)
+              debugLog(`[SSE Stream] [${retryTimestamp}] Found complete event on retry, sending:`, completeEvent.type)
               if (completeEvent.type === 'job-complete') {
                 sendEvent('job-complete', completeEvent.data)
               } else {

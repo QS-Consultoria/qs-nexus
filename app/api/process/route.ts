@@ -5,6 +5,7 @@ import { existsSync } from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import { processFiles } from '@/lib/services/rag-processor'
 import { processingEvents } from '@/lib/services/processing-events'
+import { debugLog } from '@/lib/utils'
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     // Iniciar processamento assíncrono
     processFiles(processedFiles, (fileName, progress) => {
       // Emite evento de progresso
-      console.log(`[Process API] Emitting progress event for ${fileName}:`, progress)
+      debugLog(`[Process API] Emitting progress event for ${fileName}:`, progress)
       processingEvents.emit(jobId, {
         jobId,
         type: 'progress',
@@ -53,13 +54,13 @@ export async function POST(request: Request) {
     })
       .then(results => {
         // Emite evento de conclusão
-        console.log(`[Process API] Processing completed for job ${jobId}:`, results)
+        debugLog(`[Process API] Processing completed for job ${jobId}:`, results)
         const allSuccess = results.every(r => r.success)
         const failed = results.filter(r => !r.success)
 
         const completionTimestamp = new Date().toISOString()
         if (allSuccess) {
-          console.log(`[Process API] [${completionTimestamp}] All files succeeded, emitting job-complete for job ${jobId}`)
+          debugLog(`[Process API] [${completionTimestamp}] All files succeeded, emitting job-complete for job ${jobId}`)
           processingEvents.emit(jobId, {
             jobId,
             type: 'job-complete',
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
             },
           })
         } else {
-          console.log(`[Process API] [${completionTimestamp}] Some files failed, emitting job-error for job ${jobId}`)
+          debugLog(`[Process API] [${completionTimestamp}] Some files failed, emitting job-error for job ${jobId}`)
           processingEvents.emit(jobId, {
             jobId,
             type: 'job-error',
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
         setTimeout(
           () => {
             processingEvents.removeAllListeners(jobId)
-            console.log(`[Process API] Cleaned up listeners for job ${jobId}`)
+            debugLog(`[Process API] Cleaned up listeners for job ${jobId}`)
           },
           1000 // 1 segundo após conclusão
         )
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
         setTimeout(
           () => {
             processingEvents.clearHistory(jobId)
-            console.log(`[Process API] Cleaned up history for job ${jobId}`)
+            debugLog(`[Process API] Cleaned up history for job ${jobId}`)
           },
           30 * 1000 // 30 segundos após conclusão
         )
