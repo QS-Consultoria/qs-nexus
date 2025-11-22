@@ -97,6 +97,9 @@ O pipeline atual segue os seguintes passos:
 ✅ **Paralelização Completa**: Todos os scripts principais são paralelos  
 ✅ **Worker Threads**: Processamento isolado de conversão de documentos (DOCX, DOC, PDF)  
 ✅ **ConcurrencyPool**: Sistema de pool de concorrência com retry logic
+✅ **Tracking de Modelos**: Armazenamento de provider e modelo usado em cada classificação
+✅ **Tracking de Tokens**: Armazenamento de tokens de input/output usados em cada classificação
+✅ **Dashboard de Estatísticas**: Gráficos de uso de modelos e tokens para análise de custos
 
 ## Documentação Adicional
 

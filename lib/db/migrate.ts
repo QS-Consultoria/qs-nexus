@@ -1,3 +1,7 @@
+// Load .env.local FIRST before importing db
+import * as dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
+
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { db } from './index'
 import { fileURLToPath } from 'url'

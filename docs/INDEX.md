@@ -29,7 +29,8 @@ docs/
 │   ├── schema-dinamico.md    # Guia de schema dinâmico de templates
 │   ├── troubleshooting.md    # Guia de troubleshooting e scripts utilitários
 │   ├── dashboard.md           # Guia de uso do Dashboard
-│   └── gemini-integration.md  # Guia de integração com Google Gemini
+│   ├── gemini-integration.md  # Guia de integração com Google Gemini
+│   └── model-tracking.md      # Guia de tracking de modelos e tokens
 │
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
@@ -199,6 +200,17 @@ Guia de integração com Google Gemini:
 - Troubleshooting
 - Melhores práticas
 
+### [model-tracking.md](./guides/model-tracking.md)
+
+Guia de tracking de modelos e tokens:
+
+- Como funciona o tracking
+- Logs de debug
+- Visualização no dashboard
+- API de estatísticas
+- Casos de uso e exemplos
+- Troubleshooting
+
 ## Referência Técnica
 
 ### [concurrency-pool.md](./reference/concurrency-pool.md)
@@ -265,6 +277,18 @@ Referência de APIs de Classificação e Schema:
 3. **Workers**: Consulte [worker-threads.md](./reference/worker-threads.md)
 
 ## Últimas Implementações
+
+### Tracking de Modelos e Tokens (2025-11-22)
+
+- ✅ **Logs de Debug**: Logs detalhados quando `DEBUG=true` mostrando provider, modelo e tokens usados
+- ✅ **Armazenamento de Modelo**: Colunas `model_provider` e `model_name` na tabela templates
+- ✅ **Armazenamento de Tokens**: Colunas `input_tokens` e `output_tokens` na tabela templates
+- ✅ **Captura de Tokens**: Uso direto do objeto `usage` do AI SDK para precisão
+- ✅ **API de Estatísticas**: Endpoint `/api/documents/model-stats` com estatísticas agregadas
+- ✅ **Dashboard de Modelos**: Gráficos de documentos por provider e modelo
+- ✅ **Dashboard de Tokens**: Gráficos de distribuição e uso de tokens por provider e modelo
+
+Ver [CHANGELOG-2025-11-22.md](./CHANGELOG-2025-11-22.md) para detalhes completos.
 
 ### Sistema de Classificação Configurável e Schema Dinâmico (2025-01-22)
 

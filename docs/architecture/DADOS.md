@@ -35,6 +35,10 @@ CREATE TABLE templates (
   markdown TEXT NOT NULL,
   metadata JSONB,              -- Todos os campos configuráveis (docType, area, etc.)
   schema_config_id UUID REFERENCES template_schema_configs(id),
+  model_provider model_provider, -- Provider usado na classificação ('openai' | 'google')
+  model_name TEXT,              -- Nome do modelo usado na classificação
+  input_tokens INTEGER,         -- Tokens de input usados na classificação
+  output_tokens INTEGER,        -- Tokens de output usados na classificação
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

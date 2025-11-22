@@ -11,10 +11,26 @@ export interface ChunkWithEmbedding extends Chunk {
 
 /**
  * Armazena template no banco usando metadata JSONB
+ * 
+ * @param template - TemplateDocument com informações do template
+ * @param documentFileId - ID do arquivo de documento
+ * @param modelProvider - Provider usado na classificação (opcional)
+ * @param modelName - Nome do modelo usado na classificação (opcional)
+ * @param inputTokens - Número de tokens de input usados (opcional)
+ * @param outputTokens - Número de tokens de output usados (opcional)
  */
 export async function storeTemplate(
-  template: TemplateDocument,
-  documentFileId: string
+  template: TemplateDocument & { 
+    modelProvider?: 'openai' | 'google'
+    modelName?: string
+    inputTokens?: number
+    outputTokens?: number
+  },
+  documentFileId: string,
+  modelProvider?: 'openai' | 'google',
+  modelName?: string,
+  inputTokens?: number,
+  outputTokens?: number
 ): Promise<string> {
   // Busca schema config ativo (ou cria um padrão se não existir)
   let schemaConfigId: string | undefined
@@ -52,6 +68,12 @@ export async function storeTemplate(
     ...(dynamicTemplate.metadata || {}),
   }
 
+  // Usa valores do template se disponível, senão usa os parâmetros
+  const finalModelProvider = (template as any).modelProvider || modelProvider || null
+  const finalModelName = (template as any).modelName || modelName || null
+  const finalInputTokens = (template as any).inputTokens ?? inputTokens ?? null
+  const finalOutputTokens = (template as any).outputTokens ?? outputTokens ?? null
+
   const [inserted] = await db
     .insert(templates)
     .values({
@@ -60,6 +82,10 @@ export async function storeTemplate(
       markdown: template.markdown,
       metadata: metadata as any,
       schemaConfigId: schemaConfigId || null,
+      modelProvider: finalModelProvider,
+      modelName: finalModelName,
+      inputTokens: finalInputTokens,
+      outputTokens: finalOutputTokens,
     })
     .returning()
 

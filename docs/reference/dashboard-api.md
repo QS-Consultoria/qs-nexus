@@ -153,6 +153,92 @@ Retorna estatísticas gerais do sistema.
 }
 ```
 
+### GET /api/documents/model-stats
+
+Retorna estatísticas de modelos e tokens usados na classificação.
+
+**Endpoint:** `GET /api/documents/model-stats`
+
+**Cache:** 30 segundos (`revalidate = 30`)
+
+**Response 200:**
+
+```json
+{
+  "byProvider": [
+    {
+      "provider": "openai",
+      "count": 1500
+    },
+    {
+      "provider": "google",
+      "count": 865
+    }
+  ],
+  "byModel": [
+    {
+      "model": "gpt-4o",
+      "provider": "openai",
+      "count": 1200
+    },
+    {
+      "model": "gemini-2.0-flash-exp",
+      "provider": "google",
+      "count": 865
+    }
+  ],
+  "totalTokens": {
+    "input": 15000000,
+    "output": 500000,
+    "total": 15500000
+  },
+  "tokensByProvider": [
+    {
+      "provider": "openai",
+      "input": 12000000,
+      "output": 400000,
+      "total": 12400000
+    },
+    {
+      "provider": "google",
+      "input": 3000000,
+      "output": 100000,
+      "total": 3100000
+    }
+  ],
+  "tokensByModel": [
+    {
+      "model": "gpt-4o",
+      "provider": "openai",
+      "input": 10000000,
+      "output": 350000,
+      "total": 10350000
+    },
+    {
+      "model": "gemini-2.0-flash-exp",
+      "provider": "google",
+      "input": 3000000,
+      "output": 100000,
+      "total": 3100000
+    }
+  ]
+}
+```
+
+**Campos:**
+
+- `byProvider`: Array de estatísticas por provider (openai, google)
+- `byModel`: Array de estatísticas por modelo (ordenado por count DESC)
+- `totalTokens`: Total de tokens usados (input, output, total)
+- `tokensByProvider`: Tokens agregados por provider
+- `tokensByModel`: Tokens agregados por modelo (ordenado por total DESC)
+
+**Exemplo:**
+
+```bash
+curl http://localhost:3000/api/documents/model-stats
+```
+
 **Campos:**
 
 - `summary`: Estatísticas gerais por status

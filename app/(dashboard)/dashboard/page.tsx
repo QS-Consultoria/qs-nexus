@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { StatusChart } from '@/components/dashboard/status-chart'
 import { AreaChart } from '@/components/dashboard/area-chart'
+import { ProviderChart } from '@/components/dashboard/provider-chart'
+import { ModelChart } from '@/components/dashboard/model-chart'
+import { TokensChart } from '@/components/dashboard/tokens-chart'
 import { RecentFiles } from '@/components/dashboard/recent-files'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,8 +38,32 @@ interface StatsData {
   }>
 }
 
+interface ModelStatsData {
+  byProvider: Array<{ provider: string; count: number }>
+  byModel: Array<{ model: string; provider: string; count: number }>
+  totalTokens: {
+    input: number
+    output: number
+    total: number
+  }
+  tokensByProvider: Array<{
+    provider: string
+    input: number
+    output: number
+    total: number
+  }>
+  tokensByModel: Array<{
+    model: string
+    provider: string
+    input: number
+    output: number
+    total: number
+  }>
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsData | null>(null)
+  const [modelStats, setModelStats] = useState<ModelStatsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,16 +72,32 @@ export default function DashboardPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetch('/api/documents/stats', {
-          next: { revalidate: 30 },
-        })
+        
+        // Busca estatísticas gerais e de modelos em paralelo
+        const [statsResponse, modelStatsResponse] = await Promise.all([
+          fetch('/api/documents/stats', {
+            next: { revalidate: 30 },
+          }),
+          fetch('/api/documents/model-stats', {
+            next: { revalidate: 30 },
+          }),
+        ])
 
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}: ${response.statusText}`)
+        if (!statsResponse.ok) {
+          throw new Error(`Erro ${statsResponse.status}: ${statsResponse.statusText}`)
         }
 
-        const data = await response.json()
-        setStats(data)
+        if (!modelStatsResponse.ok) {
+          throw new Error(`Erro ${modelStatsResponse.status}: ${modelStatsResponse.statusText}`)
+        }
+
+        const [statsData, modelStatsData] = await Promise.all([
+          statsResponse.json(),
+          modelStatsResponse.json(),
+        ])
+        
+        setStats(statsData)
+        setModelStats(modelStatsData)
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Erro desconhecido ao carregar estatísticas'
@@ -132,6 +175,64 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Model Stats Section */}
+      {modelStats && (
+        <>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight">Estatísticas de Modelos e Tokens</h2>
+            <p className="text-muted-foreground">
+              Análise de uso de modelos e consumo de tokens
+            </p>
+          </div>
+
+          {/* Provider and Model Charts */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+            {modelStats.byProvider.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Documentos por Provider</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ProviderChart data={modelStats.byProvider} />
+                </CardContent>
+              </Card>
+            )}
+
+            {modelStats.byModel.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Documentos por Modelo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ModelChart data={modelStats.byModel} />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Tokens Charts */}
+          {modelStats.totalTokens.total > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Uso de Tokens
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    (Total: {modelStats.totalTokens.total.toLocaleString()} tokens)
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TokensChart
+                  totalTokens={modelStats.totalTokens}
+                  tokensByProvider={modelStats.tokensByProvider}
+                  tokensByModel={modelStats.tokensByModel}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Bottom Row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">

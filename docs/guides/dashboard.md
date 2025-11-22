@@ -59,13 +59,27 @@ Os cards no topo mostram:
 
 ### Gráficos
 
-#### Distribuição por Status
+O dashboard exibe vários gráficos:
 
-Gráfico de pizza mostrando a distribuição de documentos por status (pending, processing, completed, failed, rejected).
+#### Gráficos Gerais
 
-#### Distribuição por Área Jurídica
+1. **Distribuição por Status**: Gráfico de pizza mostrando a distribuição de documentos por status (pending, processing, completed, failed, rejected)
 
-Gráfico de barras mostrando quantos documentos existem em cada área jurídica.
+2. **Distribuição por Área Jurídica**: Gráfico de barras mostrando quantos documentos existem em cada área jurídica
+
+#### Gráficos de Modelos e Tokens
+
+3. **Documentos por Provider**: Gráfico de barras mostrando quantos documentos foram classificados por cada provider (OpenAI, Google)
+
+4. **Documentos por Modelo**: Gráfico de barras mostrando os top 10 modelos mais usados na classificação
+
+5. **Distribuição de Tokens (Input vs Output)**: Gráfico de pizza mostrando a proporção de tokens de entrada vs saída
+
+6. **Tokens por Provider**: Gráfico de barras empilhadas mostrando tokens de input e output por provider
+
+7. **Tokens por Modelo**: Gráfico de barras empilhadas mostrando tokens de input e output por modelo (top 10)
+
+**Nota**: Os gráficos de modelos e tokens só aparecem se houver templates com informações de modelo e tokens (templates classificados após a implementação desta feature).
 
 ### Documentos de Qualidade
 

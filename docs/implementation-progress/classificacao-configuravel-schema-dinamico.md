@@ -753,3 +753,136 @@ O sistema de classificação configurável e schema dinâmico está:
 - **Migrations**: Sempre geradas com Drizzle ORM (`npm run db:generate`)
 - **MCP Neon**: Usado apenas para validações e verificações
 - **Documentação**: Atualizar este arquivo a cada fase concluída
+
+---
+
+## Fase 8: Tracking de Modelos e Tokens
+
+### Status: ✅ Concluída
+
+### Objetivos
+
+- Adicionar logs de debug para provider e modelo usado na classificação
+- Armazenar informações de modelo e provider no banco de dados
+- Armazenar informações de tokens (input/output) usados na classificação
+- Criar dashboard com gráficos de estatísticas de modelos e tokens
+
+### Arquivos Criados
+
+#### Criados:
+
+- `app/api/documents/model-stats/route.ts` - API de estatísticas de modelos e tokens
+- `components/dashboard/provider-chart.tsx` - Gráfico de documentos por provider
+- `components/dashboard/model-chart.tsx` - Gráfico de documentos por modelo
+- `components/dashboard/tokens-chart.tsx` - Gráficos de uso de tokens
+- `lib/db/migrations/0003_add_model_info_to_templates.sql` - Migration para model_provider e model_name
+- `lib/db/migrations/0004_add_token_usage_to_templates.sql` - Migration para input_tokens e output_tokens
+
+#### Modificados:
+
+- `lib/services/classifier.ts` - Logs de debug e captura de tokens do AI SDK
+- `lib/db/schema/rag.ts` - Adicionadas colunas model_provider, model_name, input_tokens, output_tokens
+- `lib/services/store-embeddings.ts` - Atualizado para salvar informações de modelo e tokens
+- `lib/services/rag-processor.ts` - Atualizado para passar informações de modelo e tokens
+- `scripts/classify-documents.ts` - Atualizado para passar informações de modelo e tokens
+- `app/(dashboard)/dashboard/page.tsx` - Adicionados gráficos de modelos e tokens
+
+### Funcionalidades
+
+- [x] Logs de debug quando `DEBUG=true` mostrando provider e modelo usado
+- [x] Colunas `model_provider` e `model_name` na tabela templates
+- [x] Colunas `input_tokens` e `output_tokens` na tabela templates
+- [x] Captura de tokens do AI SDK (promptTokens e completionTokens)
+- [x] API de estatísticas de modelos e tokens
+- [x] Gráfico de documentos por provider
+- [x] Gráfico de documentos por modelo (top 10)
+- [x] Gráfico de distribuição de tokens (input vs output)
+- [x] Gráfico de tokens por provider
+- [x] Gráfico de tokens por modelo (top 10)
+
+### Decisões Técnicas
+
+1. **Logs de Debug**:
+   - Logs apenas quando `DEBUG=true` (variável de ambiente)
+   - Exibe provider, modelo e classification model
+   - Exibe tokens usados (input, output, total)
+
+2. **Armazenamento de Informações**:
+   - `model_provider`: Enum (openai, google) - nullable
+   - `model_name`: Text - nullable
+   - `input_tokens`: Integer - nullable
+   - `output_tokens`: Integer - nullable
+   - Todas as colunas são nullable para compatibilidade com templates antigos
+
+3. **Captura de Tokens**:
+   - Usa objeto `usage` retornado pelo `generateObject` do AI SDK
+   - Captura `promptTokens` (input) e `completionTokens` (output)
+   - Funciona tanto no fluxo normal quanto no fallback (truncamento)
+
+4. **API de Estatísticas**:
+   - Endpoint `/api/documents/model-stats`
+   - Retorna estatísticas agregadas de modelos e tokens
+   - Cache de 30 segundos
+   - Queries SQL otimizadas com GROUP BY
+
+5. **Gráficos do Dashboard**:
+   - Usa recharts para visualização
+   - Gráficos responsivos
+   - Formatação de números com `.toLocaleString()`
+   - Limitação de top 10 para modelos (evita sobrecarga visual)
+
+### Validações Realizadas
+
+- ✅ Estrutura da tabela validada antes da migration
+- ✅ Migration executada com sucesso via MCP Neon
+- ✅ Estrutura da tabela validada após migration
+- ✅ Colunas adicionadas corretamente (model_provider, model_name, input_tokens, output_tokens)
+- ✅ Código sem erros de lint
+- ✅ Integração completa funcionando
+
+### Resultados
+
+**Executado em:** 2025-11-22
+
+**Estatísticas:**
+
+- Colunas adicionadas: **4** (model_provider, model_name, input_tokens, output_tokens)
+- Migrations criadas: **2** (0003 e 0004)
+- Componentes de gráficos criados: **3** (ProviderChart, ModelChart, TokensChart)
+- API de estatísticas criada: **1** (/api/documents/model-stats)
+
+**Estrutura Final da Tabela `templates`:**
+
+- `id` (uuid, PK)
+- `document_file_id` (uuid, FK)
+- `title` (text)
+- `markdown` (text)
+- `metadata` (jsonb) - Campos configuráveis
+- `schema_config_id` (uuid, FK) - Referência ao schema
+- `model_provider` (enum: openai, google) - Provider usado na classificação
+- `model_name` (text) - Nome do modelo usado na classificação
+- `input_tokens` (integer) - Tokens de input usados
+- `output_tokens` (integer) - Tokens de output usados
+- `created_at` (timestamp)
+- `updated_at` (timestamp)
+
+**Validações Realizadas:**
+
+- ✅ Estrutura antes da migration validada
+- ✅ Migrations executadas com sucesso
+- ✅ Estrutura após migrations validada
+- ✅ Código integrado e funcionando
+- ✅ Dashboard exibindo gráficos corretamente
+
+### Próximos Passos
+
+1. ✅ Fase 8 concluída
+2. Sistema pronto para análise de custos e otimização de uso de modelos
+
+### Notas Técnicas
+
+- Logs de debug apenas quando `DEBUG=true`
+- Tokens capturados diretamente do AI SDK (mais preciso que estimativas)
+- Gráficos responsivos usando recharts
+- API com cache para melhor performance
+- Compatibilidade mantida com templates antigos (colunas nullable)

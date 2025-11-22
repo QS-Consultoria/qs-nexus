@@ -198,7 +198,21 @@ export async function processFile(
       }
     )
 
-    const templateDoc = createTemplateDocument(classification, cleanedMarkdown, fileInfo!.id)
+    // Extrai informações do modelo e tokens do resultado da classificação
+    const modelProvider = (classification as any)._modelProvider
+    const modelName = (classification as any)._modelName
+    const inputTokens = (classification as any)._inputTokens
+    const outputTokens = (classification as any)._outputTokens
+
+    const templateDoc = createTemplateDocument(
+      classification,
+      cleanedMarkdown,
+      fileInfo!.id,
+      modelProvider,
+      modelName,
+      inputTokens,
+      outputTokens
+    )
     const templateId = await storeTemplate(templateDoc, fileInfo!.id)
 
     reportProgress(3, 'Classificação concluída', 60)

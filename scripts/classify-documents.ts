@@ -75,8 +75,22 @@ async function classifyDocumentTask(
       }
     )
 
+    // Extrai informações do modelo e tokens do resultado da classificação
+    const modelProvider = (classification as any)._modelProvider
+    const modelName = (classification as any)._modelName
+    const inputTokens = (classification as any)._inputTokens
+    const outputTokens = (classification as any)._outputTokens
+
     // Cria TemplateDocument
-    const templateDoc = createTemplateDocument(classification, markdown, file.id)
+    const templateDoc = createTemplateDocument(
+      classification,
+      markdown,
+      file.id,
+      modelProvider,
+      modelName,
+      inputTokens,
+      outputTokens
+    )
 
     // Armazena template no banco
     const templateId = await storeTemplate(templateDoc, file.id)

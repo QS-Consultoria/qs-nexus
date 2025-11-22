@@ -276,11 +276,23 @@ export async function prepareMarkdownContent(
  * @param onProgress - Callback opcional para logar progresso da classificação
  * @returns Resultado da classificação com metadados estruturados
  */
+export interface ClassificationResultWithModel extends ClassificationResult {
+  _modelProvider?: 'openai' | 'google'
+  _modelName?: string
+  _inputTokens?: number
+  _outputTokens?: number
+}
+
 export async function classifyDocument(
   markdown: string,
   configId?: string,
   onProgress?: (message: string) => void
-): Promise<ClassificationResult | Record<string, any>> {
+): Promise<(ClassificationResult | Record<string, any>) & { 
+  _modelProvider?: 'openai' | 'google'
+  _modelName?: string
+  _inputTokens?: number
+  _outputTokens?: number
+}> {
   // Carrega configuração
   const config = await loadConfigFromDB(configId)
 
@@ -298,6 +310,14 @@ export async function classifyDocument(
   // Obtém provider do modelo
   const classificationModel = parseClassificationModel(config.modelName, config.modelProvider)
   const { model } = getClassificationModelProvider(classificationModel)
+
+  // Log de debug: mostra provider e model usado
+  const DEBUG = process.env.DEBUG === 'true'
+  if (DEBUG) {
+    console.log(`[CLASSIFIER] Provider: ${config.modelProvider}`)
+    console.log(`[CLASSIFIER] Model: ${config.modelName}`)
+    console.log(`[CLASSIFIER] Classification Model: ${classificationModel}`)
+  }
 
   // Carrega schema config para obter o ID (necessário para validação)
   let schemaConfigId: string | undefined
@@ -317,7 +337,7 @@ export async function classifyDocument(
   onProgress?.('⏳ Iniciando classificação...')
 
   try {
-    const { object } = await generateObject({
+    const response = await generateObject({
       model,
       schema: classificationSchema,
       messages: [
@@ -331,6 +351,15 @@ export async function classifyDocument(
         },
       ],
     })
+
+    const { object, usage } = response
+
+    // Log de debug: mostra tokens usados
+    if (DEBUG && usage) {
+      console.log(`[CLASSIFIER] Input tokens: ${usage.promptTokens}`)
+      console.log(`[CLASSIFIER] Output tokens: ${usage.completionTokens}`)
+      console.log(`[CLASSIFIER] Total tokens: ${usage.totalTokens || (usage.promptTokens + usage.completionTokens)}`)
+    }
 
     // Resultado da classificação (pode ser dinâmico baseado no schema)
     // Aplica valores padrão apenas se o schema ainda usar esses campos
@@ -353,7 +382,14 @@ export async function classifyDocument(
     // Loga fim da classificação
     onProgress?.('✅ Classificação concluída')
 
-    return result
+    // Adiciona informações do modelo e tokens ao resultado
+    return {
+      ...result,
+      _modelProvider: config.modelProvider,
+      _modelName: config.modelName,
+      _inputTokens: usage?.promptTokens,
+      _outputTokens: usage?.completionTokens,
+    }
   } catch (error) {
     // Retry logic para rate limit
     if (error instanceof Error && error.message.includes('rate limit')) {
@@ -382,7 +418,7 @@ export async function classifyDocument(
       const fallbackMarkdown = truncateMarkdown(processedMarkdown, fallbackTokens)
 
       try {
-        const { object } = await generateObject({
+        const fallbackResponse = await generateObject({
           model,
           schema: classificationSchema,
           messages: [
@@ -396,6 +432,15 @@ export async function classifyDocument(
             },
           ],
         })
+
+        const { object, usage: fallbackUsage } = fallbackResponse
+
+        // Log de debug: mostra tokens usados (fallback)
+        if (DEBUG && fallbackUsage) {
+          console.log(`[CLASSIFIER] Fallback - Input tokens: ${fallbackUsage.promptTokens}`)
+          console.log(`[CLASSIFIER] Fallback - Output tokens: ${fallbackUsage.completionTokens}`)
+          console.log(`[CLASSIFIER] Fallback - Total tokens: ${fallbackUsage.totalTokens || (fallbackUsage.promptTokens + fallbackUsage.completionTokens)}`)
+        }
 
         // Resultado da classificação (pode ser dinâmico baseado no schema)
         // Aplica valores padrão apenas se o schema ainda usar esses campos
@@ -418,7 +463,14 @@ export async function classifyDocument(
         // Loga fim da classificação (fallback)
         onProgress?.('✅ Classificação concluída')
 
-        return fallbackResult
+        // Adiciona informações do modelo e tokens ao resultado
+        return {
+          ...fallbackResult,
+          _modelProvider: config.modelProvider,
+          _modelName: config.modelName,
+          _inputTokens: fallbackUsage?.promptTokens,
+          _outputTokens: fallbackUsage?.completionTokens,
+        }
       } catch (fallbackError) {
         // Se ainda falhar, propaga o erro original
         throw new Error(`Falha ao classificar documento mesmo após truncamento: ${error.message}`)
@@ -432,12 +484,29 @@ export async function classifyDocument(
 /**
  * Cria um TemplateDocument completo a partir da classificação e markdown
  * Agora aceita resultado dinâmico baseado no schema configurado
+ * 
+ * @param classification - Resultado da classificação
+ * @param markdown - Conteúdo markdown do documento
+ * @param documentFileId - ID do arquivo de documento
+ * @param modelProvider - Provider usado na classificação (openai, google)
+ * @param modelName - Nome do modelo usado na classificação
+ * @param inputTokens - Número de tokens de input usados
+ * @param outputTokens - Número de tokens de output usados
  */
 export function createTemplateDocument(
   classification: ClassificationResult | Record<string, any>,
   markdown: string,
-  documentFileId: string
-): TemplateDocument {
+  documentFileId: string,
+  modelProvider?: 'openai' | 'google',
+  modelName?: string,
+  inputTokens?: number,
+  outputTokens?: number
+): TemplateDocument & { 
+  modelProvider?: 'openai' | 'google'
+  modelName?: string
+  inputTokens?: number
+  outputTokens?: number
+} {
   // Extrai campos de forma segura (com fallback para valores padrão)
   const title = (classification as any).title || ''
   const docType = (classification as any).docType || 'outro'
@@ -479,5 +548,9 @@ export function createTemplateDocument(
     qualityScore,
     isGold: qualityScore !== undefined && qualityScore > 60,
     isSilver: qualityScore !== undefined && qualityScore >= 56 && qualityScore <= 60,
+    modelProvider,
+    modelName,
+    inputTokens,
+    outputTokens,
   }
 }

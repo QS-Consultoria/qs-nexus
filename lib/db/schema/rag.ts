@@ -112,6 +112,10 @@ export const templates = pgTable('templates', {
   markdown: text('markdown').notNull(),
   metadata: jsonb('metadata'), // All configurable fields stored here
   schemaConfigId: uuid('schema_config_id').references(() => templateSchemaConfigs.id),
+  modelProvider: modelProviderEnum('model_provider'), // Provider usado na classificação (openai, google)
+  modelName: text('model_name'), // Nome do modelo usado na classificação
+  inputTokens: integer('input_tokens'), // Número de tokens de input usados na classificação
+  outputTokens: integer('output_tokens'), // Número de tokens de output usados na classificação
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
