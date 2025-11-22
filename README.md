@@ -122,7 +122,7 @@ lw-rag-system/
 - ✅ Tracking de processamento (evita duplicatas)
 - ✅ Caminhos relativos (portável entre máquinas)
 - ✅ Conversão DOCX → Markdown (usando mammoth)
-- ✅ Conversão PDF e .doc → Markdown estruturado (com Google Gemini 1.5 Flash quando disponível)
+- ✅ Conversão PDF e .doc → Markdown estruturado (com Google Gemini 2.0 Flash quando disponível)
 - ✅ Classificação inteligente com metadados
 - ✅ Chunking por seções Markdown
 - ✅ Embeddings com text-embedding-3-small
@@ -135,8 +135,8 @@ lw-rag-system/
 O sistema suporta três formatos de documentos:
 
 - **DOCX**: Convertido usando `mammoth`, gerando markdown bem estruturado automaticamente
-- **PDF**: Extração de texto com `pdf-parse` e estruturação com Google Gemini 1.5 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
-- **DOC**: Extração com `textract`/LibreOffice/Pandoc e estruturação com Google Gemini 1.5 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
+- **PDF**: Extração de texto com `pdf-parse` e estruturação com Google Gemini 2.0 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
+- **DOC**: Extração com `textract`/LibreOffice/Pandoc e estruturação com Google Gemini 2.0 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
 
 Se a chave do Google não estiver configurada, o sistema usa formatação básica como fallback.
 
