@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useProcessStream } from '@/hooks/use-process-stream'
-import { FileText, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { FileText, CheckCircle, XCircle, Clock, AlertCircle, Eye } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import Link from 'next/link'
 
 interface ProcessingProgressProps {
   jobId: string | null
@@ -38,6 +40,8 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
   const { status, files, error, jobComplete } = useProcessStream(jobId)
   const prevJobCompleteRef = useRef(false)
   const notifiedFilesRef = useRef<Set<string>>(new Set())
+  const [fileIds, setFileIds] = useState<Record<string, string>>({})
+  const fetchedFileIdsRef = useRef<Set<string>>(new Set())
 
   // Notificar quando o job é concluído ou há erros
   useEffect(() => {
@@ -95,6 +99,44 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
         )
       }
     })
+  }, [files])
+
+  // Buscar IDs dos arquivos quando são concluídos
+  useEffect(() => {
+    const fetchFileIds = async () => {
+      const fileArray = Object.values(files)
+      const completedFiles = fileArray.filter(
+        (f: any) => f.status === 'completed' && !fetchedFileIdsRef.current.has(f.fileName)
+      )
+      
+      if (completedFiles.length === 0) {
+        return
+      }
+      
+      for (const file of completedFiles) {
+        fetchedFileIdsRef.current.add(file.fileName)
+        
+        try {
+          // Buscar arquivo pelo fileName usando search
+          const response = await fetch(`/api/documents?search=${encodeURIComponent(file.fileName)}&status=completed&limit=1`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.files && data.files.length > 0) {
+              // Pega o arquivo mais recente com esse nome
+              const fileData = data.files[0]
+              setFileIds(prev => ({
+                ...prev,
+                [file.fileName]: fileData.id
+              }))
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao buscar ID do arquivo ${file.fileName}:`, error)
+        }
+      }
+    }
+
+    fetchFileIds()
   }, [files])
 
   if (!jobId || status === 'idle') {
@@ -208,14 +250,24 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
                       )}
                     </div>
                   </div>
-                  <Badge
-                    className={`shrink-0 ${
-                      statusColors[file.status as keyof typeof statusColors] || 'bg-gray-500'
-                    }`}
-                    variant="default"
-                  >
-                    {statusLabels[file.status] || file.status}
-                  </Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {file.status === 'completed' && fileIds[file.fileName] && (
+                      <Link href={`/files/${fileIds[file.fileName]}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">Ver detalhes</span>
+                        </Button>
+                      </Link>
+                    )}
+                    <Badge
+                      className={`${
+                        statusColors[file.status as keyof typeof statusColors] || 'bg-gray-500'
+                      }`}
+                      variant="default"
+                    >
+                      {statusLabels[file.status] || file.status}
+                    </Badge>
+                  </div>
                 </div>
               )
             })

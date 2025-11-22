@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import { existsSync, unlinkSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import textract from 'textract'
+import { structureMarkdownWithGemini } from '../services/markdown-structurer.ts'
 
 const require = createRequire(import.meta.url)
 const pdfParseModule = require('pdf-parse')
@@ -96,8 +97,21 @@ async function convertDocToMarkdown(filePath: string): Promise<ConversionResult>
       })
     })
 
-    const lines = text.split('\n').filter((line: string) => line.trim().length > 0)
-    let markdown = lines.join('\n\n')
+    const rawText = text
+    
+    // Tentar estruturar com Gemini se a API key estiver configurada
+    let markdown: string
+    try {
+      if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        markdown = await structureMarkdownWithGemini(rawText)
+      } else {
+        throw new Error('GOOGLE_GENERATIVE_AI_API_KEY não configurada, usando formatação básica')
+      }
+    } catch (geminiError) {
+      // Fallback para formatação básica se Gemini falhar
+      console.warn('[WORKER] Gemini não disponível, usando formatação básica:', geminiError instanceof Error ? geminiError.message : String(geminiError))
+      const lines = rawText.split('\n').filter((line: string) => line.trim().length > 0)
+      let basicMarkdown = lines.join('\n\n')
     const formattedLines = lines.map((line: string) => {
       const trimmed = line.trim()
       if (trimmed.length < 100 && trimmed.length > 0 && /^[A-ZÁÉÍÓÚÇÃÊÔ]/.test(trimmed)) {
@@ -106,6 +120,8 @@ async function convertDocToMarkdown(filePath: string): Promise<ConversionResult>
       return trimmed
     })
     markdown = formattedLines.join('\n\n')
+    }
+    
     const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
     return { markdown: cleanMarkdown(markdown.trim()), wordCount }
   } catch (textractError) {
@@ -145,7 +161,18 @@ async function convertDocToMarkdown(filePath: string): Promise<ConversionResult>
     if (pandocAvailable) {
       try {
         const { stdout } = await execAsync(`pandoc "${filePath}" -t markdown`)
-        const markdown = stdout
+        let markdown = stdout
+        
+        // Tentar estruturar com Gemini se a API key estiver configurada
+        try {
+          if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            markdown = await structureMarkdownWithGemini(markdown)
+          }
+        } catch (geminiError) {
+          // Fallback: usar markdown do Pandoc como está (já é bem estruturado)
+          console.warn('[WORKER] Gemini não disponível para Pandoc output, usando markdown do Pandoc:', geminiError instanceof Error ? geminiError.message : String(geminiError))
+        }
+        
         const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
         return { markdown: cleanMarkdown(markdown.trim()), wordCount }
       } catch (pandocError) {
@@ -209,6 +236,17 @@ async function convertPdfToMarkdown(filePath: string): Promise<ConversionResult>
       )
     }
   }
+  // Tentar estruturar com Gemini se a API key estiver configurada
+  let structuredMarkdown: string
+  try {
+    if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      structuredMarkdown = await structureMarkdownWithGemini(markdown)
+    } else {
+      throw new Error('GOOGLE_GENERATIVE_AI_API_KEY não configurada, usando formatação básica')
+    }
+  } catch (geminiError) {
+    // Fallback para formatação básica se Gemini falhar
+    console.warn('[WORKER] Gemini não disponível, usando formatação básica:', geminiError instanceof Error ? geminiError.message : String(geminiError))
   const lines = markdown.split('\n').filter((line: string) => line.trim().length > 0)
   const formattedLines = lines.map((line: string, index: number) => {
     const trimmed = line.trim()
@@ -219,9 +257,11 @@ async function convertPdfToMarkdown(filePath: string): Promise<ConversionResult>
     }
     return trimmed
   })
-  markdown = formattedLines.join('\n\n')
-  const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
-  return { markdown: cleanMarkdown(markdown.trim()), wordCount }
+    structuredMarkdown = formattedLines.join('\n\n')
+  }
+  
+  const wordCount = structuredMarkdown.split(/\s+/).filter((word: string) => word.length > 0).length
+  return { markdown: cleanMarkdown(structuredMarkdown.trim()), wordCount }
 }
 
 /**

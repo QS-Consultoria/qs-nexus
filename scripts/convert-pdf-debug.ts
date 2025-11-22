@@ -60,8 +60,8 @@ function convertDocumentWithWorker(filePath: string): Promise<{ markdown: string
 
 async function main() {
   // Caminho do arquivo PDF específico
-  const pdfFileName = '12.02- Julgado favorável - Pet. inicial - Auxílio-doença - Exclusão dos 20_ menores salários-de-contribuição.pdf'
-  const pdfPath = join(PROJECT_ROOT, 'data', 'process', pdfFileName)
+  const pdfFileName = '(Software Engineer) Nubank_ Inside the Process.pdf'
+  const pdfPath = join(PROJECT_ROOT, 'uploads', 'temp', pdfFileName)
 
   if (!existsSync(pdfPath)) {
     console.error(`❌ Arquivo não encontrado: ${pdfPath}`)

@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 // pdf-parse será importado dinamicamente quando necessário
 import textract from 'textract'
 import { cleanMarkdown } from './docx-converter'
+import { structureMarkdownWithGemini } from './markdown-structurer'
 
 const execAsync = promisify(exec)
 
@@ -91,21 +92,30 @@ async function convertDocToMarkdown(filePath: string): Promise<ConversionResult>
       })
     })
 
-    // Formatar texto básico como markdown
-    // Preservar parágrafos (linhas em branco)
-    const lines = text.split('\n').filter(line => line.trim().length > 0)
-    let markdown = lines.join('\n\n')
-
-    // Tentar detectar títulos (linhas curtas, geralmente em maiúsculas ou com formatação especial)
-    const formattedLines = lines.map(line => {
-      const trimmed = line.trim()
-      // Se linha é curta e parece título
-      if (trimmed.length < 100 && trimmed.length > 0 && /^[A-ZÁÉÍÓÚÇÃÊÔ]/.test(trimmed)) {
-        return `## ${trimmed}`
+    const rawText = text
+    
+    // Tentar estruturar com Gemini se a API key estiver configurada
+    let markdown: string
+    try {
+      if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        markdown = await structureMarkdownWithGemini(rawText)
+      } else {
+        throw new Error('GOOGLE_GENERATIVE_AI_API_KEY não configurada, usando formatação básica')
       }
-      return trimmed
-    })
-    markdown = formattedLines.join('\n\n')
+    } catch (geminiError) {
+      // Fallback para formatação básica se Gemini falhar
+      console.warn('[SERVICE] Gemini não disponível, usando formatação básica:', geminiError instanceof Error ? geminiError.message : String(geminiError))
+      const lines = rawText.split('\n').filter(line => line.trim().length > 0)
+      let basicMarkdown = lines.join('\n\n')
+      const formattedLines = lines.map(line => {
+        const trimmed = line.trim()
+        if (trimmed.length < 100 && trimmed.length > 0 && /^[A-ZÁÉÍÓÚÇÃÊÔ]/.test(trimmed)) {
+          return `## ${trimmed}`
+        }
+        return trimmed
+      })
+      markdown = formattedLines.join('\n\n')
+    }
 
     const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
 
@@ -166,7 +176,18 @@ async function convertDocToMarkdown(filePath: string): Promise<ConversionResult>
     if (pandocAvailable) {
       try {
         const { stdout } = await execAsync(`pandoc "${filePath}" -t markdown`)
-        const markdown = stdout
+        let markdown = stdout
+        
+        // Tentar estruturar com Gemini se a API key estiver configurada
+        try {
+          if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            markdown = await structureMarkdownWithGemini(markdown)
+          }
+        } catch (geminiError) {
+          // Fallback: usar markdown do Pandoc como está (já é bem estruturado)
+          console.warn('[SERVICE] Gemini não disponível para Pandoc output, usando markdown do Pandoc:', geminiError instanceof Error ? geminiError.message : String(geminiError))
+        }
+        
         const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
 
         return {
@@ -201,25 +222,31 @@ async function convertPdfToMarkdown(filePath: string): Promise<ConversionResult>
     const PDFParse = pdfParseModule.PDFParse
     const parser = new PDFParse({ data: buffer })
     const pdfData = await parser.getText()
-    let markdown = pdfData.text
+    let rawMarkdown = pdfData.text
     
-    // Formatar texto básico como markdown preservando estrutura
-    const lines = markdown.split('\n').filter((line: string) => line.trim().length > 0)
-    
-    // Tentar detectar títulos e parágrafos
-    const formattedLines = lines.map((line: string, index: number) => {
-      const trimmed = line.trim()
-      // Se linha é curta e parece título (começa com maiúscula, linha anterior estava vazia)
-      if (trimmed.length < 100 && trimmed.length > 0 && /^[A-ZÁÉÍÓÚÇÃÊÔ]/.test(trimmed)) {
-        // Verificar se linha anterior estava vazia (indica possível título)
-        if (index === 0 || lines[index - 1].trim().length === 0) {
-          return `## ${trimmed}`
-        }
+    // Tentar estruturar com Gemini se a API key estiver configurada
+    let markdown: string
+    try {
+      if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        markdown = await structureMarkdownWithGemini(rawMarkdown)
+      } else {
+        throw new Error('GOOGLE_GENERATIVE_AI_API_KEY não configurada, usando formatação básica')
       }
-      return trimmed
-    })
-    
-    markdown = formattedLines.join('\n\n')
+    } catch (geminiError) {
+      // Fallback para formatação básica se Gemini falhar
+      console.warn('[SERVICE] Gemini não disponível, usando formatação básica:', geminiError instanceof Error ? geminiError.message : String(geminiError))
+      const lines = rawMarkdown.split('\n').filter((line: string) => line.trim().length > 0)
+      const formattedLines = lines.map((line: string, index: number) => {
+        const trimmed = line.trim()
+        if (trimmed.length < 100 && trimmed.length > 0 && /^[A-ZÁÉÍÓÚÇÃÊÔ]/.test(trimmed)) {
+          if (index === 0 || lines[index - 1].trim().length === 0) {
+            return `## ${trimmed}`
+          }
+        }
+        return trimmed
+      })
+      markdown = formattedLines.join('\n\n')
+    }
 
     const wordCount = markdown.split(/\s+/).filter((word: string) => word.length > 0).length
 

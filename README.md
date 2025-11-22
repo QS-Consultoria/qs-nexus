@@ -7,6 +7,7 @@ Sistema de RAG (Retrieval-Augmented Generation) para processamento de documentos
 - Node.js 18+
 - PostgreSQL com extensão pgvector (Neon recomendado)
 - Conta OpenAI com API key
+- (Opcional) Conta Google AI com API key para estruturação melhorada de PDF e .doc
 
 ## Instalação
 
@@ -20,6 +21,7 @@ npm install
 2. Configure as variáveis de ambiente:
    - `DATABASE_URL`: String de conexão do Neon
    - `OPENAI_API_KEY`: Chave da API OpenAI
+   - `GOOGLE_GENERATIVE_AI_API_KEY`: (Opcional) Chave da API Google para estruturação melhorada de PDF e .doc. Obtenha em [Google AI Studio](https://ai.google.dev/)
    - `DOCX_SOURCE_DIR`: Caminho relativo onde estão os arquivos DOCX (padrão: `./list-docx`)
 
 ## Setup do Banco de Dados
@@ -119,13 +121,24 @@ lw-rag-system/
 
 - ✅ Tracking de processamento (evita duplicatas)
 - ✅ Caminhos relativos (portável entre máquinas)
-- ✅ Conversão DOCX → Markdown
+- ✅ Conversão DOCX → Markdown (usando mammoth)
+- ✅ Conversão PDF e .doc → Markdown estruturado (com Google Gemini 1.5 Flash quando disponível)
 - ✅ Classificação inteligente com metadados
 - ✅ Chunking por seções Markdown
 - ✅ Embeddings com text-embedding-3-small
 - ✅ Índice HNSW para busca vetorial otimizada
 - ✅ Relatórios de status
 - ✅ Reprocessamento de arquivos individuais
+
+### Processamento de Documentos
+
+O sistema suporta três formatos de documentos:
+
+- **DOCX**: Convertido usando `mammoth`, gerando markdown bem estruturado automaticamente
+- **PDF**: Extração de texto com `pdf-parse` e estruturação com Google Gemini 1.5 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
+- **DOC**: Extração com `textract`/LibreOffice/Pandoc e estruturação com Google Gemini 1.5 Flash (quando `GOOGLE_GENERATIVE_AI_API_KEY` está configurada)
+
+Se a chave do Google não estiver configurada, o sistema usa formatação básica como fallback.
 
 ## Documentação
 

@@ -26,6 +26,10 @@ DATABASE_URL=postgresql://user:password@host:5432/database?sslmode=require
 # OpenAI
 OPENAI_API_KEY=sk-...
 
+# Google Generative AI (opcional, para estruturação de PDF e .doc)
+# Obtenha sua chave em: https://ai.google.dev/
+GOOGLE_GENERATIVE_AI_API_KEY=your-google-api-key-here
+
 # Configurações
 DOCX_SOURCE_DIR=../list-docx
 EMBEDDING_MODEL=text-embedding-3-small
