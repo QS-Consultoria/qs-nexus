@@ -25,8 +25,8 @@ O pipeline atual segue os seguintes passos:
 - Varre recursivamente arquivos DOCX, DOC e PDF em `../list-docx` (caminho relativo)
 - Converte documentos → Markdown preservando formatação:
   - **DOCX**: Usa `mammoth` (preserva estrutura completa)
-  - **DOC**: Usa `textract` (Node.js puro), com fallback para LibreOffice ou Pandoc
-  - **PDF**: Usa `pdf-parse` (Node.js puro), com fallback para Pandoc (melhor qualidade)
+  - **DOC**: Usa `textract` (Node.js puro), com fallback para LibreOffice ou Pandoc, e estruturação opcional com Google Gemini 2.0 Flash
+  - **PDF**: Usa `pdf-parse` (Node.js puro), com fallback para Pandoc, e estruturação opcional com Google Gemini 2.0 Flash (melhor qualidade)
 - Calcula hash SHA256 para tracking
 - Armazena status no banco de dados
 
@@ -83,12 +83,17 @@ O pipeline atual segue os seguintes passos:
 ✅ **Tracking de Processamento**: Evita reprocessamento de arquivos já processados  
 ✅ **Caminhos Relativos**: Portável entre diferentes máquinas  
 ✅ **Conversão Markdown**: Preserva estrutura do documento (suporta DOCX, DOC, PDF)  
+✅ **Estruturação com Gemini**: Estruturação opcional de PDF/DOC usando Google Gemini 2.0 Flash para melhor qualidade  
 ✅ **Classificação Inteligente**: Metadados estruturados com TemplateDocument  
 ✅ **Chunking Inteligente**: Por seções Markdown quando possível  
 ✅ **Embeddings Otimizados**: text-embedding-3-small (custo-benefício)  
 ✅ **Índice HNSW**: Busca vetorial otimizada  
 ✅ **Relatórios de Status**: `processing-status.json`  
 ✅ **Reprocessamento Individual**: Permite reprocessar arquivos específicos  
+✅ **Reprocessamento Completo**: Permite reprocessar documento completo com novo arquivo  
+✅ **Regeneração de Chunks**: Permite regenerar chunks e embeddings sem reprocessar o documento  
+✅ **Múltiplos Modelos de Chat**: Suporte a OpenAI (GPT-4o, GPT-4o Mini) e Google Gemini (2.0/2.5 Flash)  
+✅ **Preview de Markdown**: Visualização renderizada e edição de markdown na interface  
 ✅ **Paralelização Completa**: Todos os scripts principais são paralelos  
 ✅ **Worker Threads**: Processamento isolado de conversão de documentos (DOCX, DOC, PDF)  
 ✅ **ConcurrencyPool**: Sistema de pool de concorrência com retry logic
@@ -102,6 +107,7 @@ O pipeline atual segue os seguintes passos:
 - [paralelizacao.md](./guides/paralelizacao.md) - Guia de paralelização
 - [classificacao.md](./guides/classificacao.md) - Guia de classificação
 - [troubleshooting.md](./guides/troubleshooting.md) - Guia de troubleshooting e scripts utilitários
+- [CHANGELOG-2025-11-21.md](./CHANGELOG-2025-11-21.md) - Changelog completo das mudanças de 21/11/2025
 - [INDEX.md](./INDEX.md) - Índice completo da documentação
 
 ## Notas Importantes

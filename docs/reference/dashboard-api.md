@@ -528,11 +528,218 @@ eventSource.addEventListener('job-complete', event => {
 
 **Nota**: Atualmente implementado com simulação. Precisa ser conectado ao sistema de processamento real.
 
+## Documentos - Operações Avançadas
+
+### PUT /api/documents/[id]
+
+Atualiza o markdown de um documento.
+
+**Endpoint:** `PUT /api/documents/[id]`
+
+**Path Parameters:**
+
+- `id` (string, obrigatório): ID do documento (UUID)
+
+**Headers:**
+
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "markdown": "# Título\n\nConteúdo do documento..."
+}
+```
+
+**Campos:**
+
+- `markdown` (string, obrigatório): Novo conteúdo markdown
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Markdown atualizado com sucesso"
+}
+```
+
+**Response 400:**
+
+```json
+{
+  "error": "Markdown é obrigatório"
+}
+```
+
+**Response 404:**
+
+```json
+{
+  "error": "Arquivo não encontrado"
+}
+```
+
+**Exemplo:**
+
+```bash
+curl -X PUT http://localhost:3000/api/documents/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "markdown": "# Novo Título\n\nNovo conteúdo..."
+  }'
+```
+
+### POST /api/documents/[id]/reprocess-full
+
+Reprocessa completamente um documento com um novo arquivo.
+
+**Endpoint:** `POST /api/documents/[id]/reprocess-full`
+
+**Path Parameters:**
+
+- `id` (string, obrigatório): ID do documento (UUID)
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+
+- `file` (File, obrigatório): Novo arquivo DOCX, DOC ou PDF
+
+**Validações:**
+
+- Apenas arquivos `.docx`, `.doc` ou `.pdf` são aceitos
+- Tamanho máximo: 50MB
+- Arquivo deve estar em status `completed` ou `rejected`
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Reprocessamento completo iniciado. O arquivo será processado em segundo plano."
+}
+```
+
+**Response 400:**
+
+```json
+{
+  "error": "Apenas arquivos concluídos ou rejeitados podem ser reprocessados"
+}
+```
+
+**Response 404:**
+
+```json
+{
+  "error": "Arquivo não encontrado"
+}
+```
+
+**Exemplo:**
+
+```bash
+curl -X POST http://localhost:3000/api/documents/550e8400-e29b-41d4-a716-446655440000/reprocess-full \
+  -F "file=@novo-documento.docx"
+```
+
+**Nota**: O reprocessamento é assíncrono. O arquivo será processado em segundo plano.
+
+### POST /api/documents/[id]/regenerate-chunks
+
+Regenera chunks e embeddings de um documento sem reprocessar o documento completo.
+
+**Endpoint:** `POST /api/documents/[id]/regenerate-chunks`
+
+**Path Parameters:**
+
+- `id` (string, obrigatório): ID do documento (UUID)
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Chunks e embeddings regenerados com sucesso. 15 chunks criados.",
+  "chunksCount": 15
+}
+```
+
+**Response 400:**
+
+```json
+{
+  "error": "Apenas arquivos concluídos podem ter chunks regenerados"
+}
+```
+
+**Response 404:**
+
+```json
+{
+  "error": "Arquivo não encontrado"
+}
+```
+
+**Exemplo:**
+
+```bash
+curl -X POST http://localhost:3000/api/documents/550e8400-e29b-41d4-a716-446655440000/regenerate-chunks
+```
+
+**Nota**: Esta operação:
+1. Deleta chunks e embeddings antigos
+2. Gera novos chunks a partir do markdown atual
+3. Gera novos embeddings para os chunks
+4. Armazena os novos chunks no banco de dados
+
+### DELETE /api/documents/[id]
+
+Exclui um documento e todos os dados relacionados (template, chunks).
+
+**Endpoint:** `DELETE /api/documents/[id]`
+
+**Path Parameters:**
+
+- `id` (string, obrigatório): ID do documento (UUID)
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Arquivo e todos os dados relacionados foram excluídos com sucesso"
+}
+```
+
+**Response 404:**
+
+```json
+{
+  "error": "Arquivo não encontrado"
+}
+```
+
+**Exemplo:**
+
+```bash
+curl -X DELETE http://localhost:3000/api/documents/550e8400-e29b-41d4-a716-446655440000
+```
+
+**Nota**: Esta operação exclui em cascata:
+- O arquivo (`document_files`)
+- O template associado (`templates`)
+- Todos os chunks (`template_chunks`)
+
 ## Chat RAG
 
 ### POST /api/chat
 
-Chat com RAG usando busca vetorial e OpenAI.
+Chat com RAG usando busca vetorial e múltiplos modelos de IA (OpenAI e Google Gemini).
 
 **Endpoint:** `POST /api/chat`
 
@@ -549,6 +756,7 @@ Content-Type: application/json
 ```json
 {
   "message": "Qual é a lei sobre contratos de trabalho?",
+  "model": "openai-gpt-4o-mini",
   "history": [
     {
       "role": "user",
@@ -565,7 +773,33 @@ Content-Type: application/json
 **Campos:**
 
 - `message` (string, obrigatório): Mensagem do usuário
+- `model` (string, opcional): Modelo de IA a usar (padrão: `openai-gpt-4o-mini`)
 - `history` (array, opcional): Histórico de mensagens (últimas 6 são usadas)
+
+**Modelos Disponíveis:**
+
+- `openai-gpt-4o-mini` (padrão)
+- `openai-gpt-4o`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-lite`
+- `gemini-2.5-flash`
+- `gemini-2.5-flash-lite`
+
+**Formato Alternativo (AI SDK):**
+
+Também aceita o formato do AI SDK:
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Qual é a lei sobre contratos?"
+    }
+  ],
+  "model": "openai-gpt-4o-mini"
+}
+```
 
 **Response:** Stream de texto (via AI SDK Data Stream)
 
@@ -638,16 +872,21 @@ while (true) {
 **Fluxo Interno:**
 
 1. Gera embedding da query usando `generateEmbedding`
-2. Busca chunks similares no banco (cosine similarity >= 0.7)
+2. Busca chunks similares no banco (cosine similarity >= 0.5)
 3. Constrói contexto RAG com chunks encontrados
-4. Chama OpenAI (GPT-4o-mini) com contexto
+4. Chama o modelo selecionado (OpenAI ou Google Gemini) com contexto
 5. Retorna resposta via streaming
 
 **Parâmetros da Busca:**
 
 - `limit`: 10 chunks (padrão)
-- `minSimilarity`: 0.7 (70%)
+- `minSimilarity`: 0.5 (50%) - reduzido de 0.7 para encontrar mais resultados
 - Histórico: Últimas 6 mensagens (3 turnos)
+
+**Configuração de Modelos:**
+
+- **OpenAI**: Requer `OPENAI_API_KEY` no `.env.local`
+- **Google Gemini**: Requer `GOOGLE_GENERATIVE_AI_API_KEY` no `.env.local`
 
 ## Códigos de Erro
 

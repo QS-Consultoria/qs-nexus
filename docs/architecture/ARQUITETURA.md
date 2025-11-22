@@ -11,6 +11,10 @@ Documentos (DOCX, DOC, PDF) (../list-docx)
     ↓
 [1] npm run rag:process
     ↓
+Extração de Texto (pdf-parse/textract/mammoth)
+    ↓
+[Opcional] Estruturação com Gemini (se GOOGLE_GENERATIVE_AI_API_KEY configurada)
+    ↓
 Markdown + Tracking (document_files)
     ↓
 [2] npm run rag:filter
@@ -49,10 +53,22 @@ Sistema de tracking que evita reprocessamento:
 
 - **Conversão Unificada**: Suporta DOCX, DOC, PDF → Markdown
 - **DOCX**: Usa `mammoth` (preserva estrutura completa)
-- **DOC**: Usa `textract` (Node.js puro), com fallback para LibreOffice → DOCX → mammoth, ou Pandoc
-- **PDF**: Usa `pdf-parse` (Node.js puro), com fallback para Pandoc (melhor preservação)
+- **DOC**: Usa `textract` (Node.js puro), com fallback para LibreOffice → DOCX → mammoth, ou Pandoc, com estruturação opcional via Google Gemini
+- **PDF**: Usa `pdf-parse` (Node.js puro), com fallback para Pandoc, com estruturação opcional via Google Gemini (melhor preservação)
 - **Preservação**: Mantém estrutura (títulos, listas, parágrafos) quando possível
 - **Limpeza**: Normaliza formatação
+- **Estruturação com Gemini**: Opcionalmente usa Google Gemini 2.0 Flash para estruturar texto extraído em markdown bem formatado (requer `GOOGLE_GENERATIVE_AI_API_KEY`)
+
+### 2.1. Markdown Structurer (`lib/services/markdown-structurer.ts`)
+
+Serviço opcional que usa Google Gemini para estruturar texto extraído:
+
+- **Modelo**: Gemini 2.0 Flash (com fallback para Gemini 2.0 Flash Lite)
+- **Limite de Tokens**: 875k tokens (dentro do limite de 1M do Gemini)
+- **Contagem de Tokens**: Usa `tiktoken` para contagem precisa
+- **Truncamento Inteligente**: Trunca textos grandes mantendo o máximo de conteúdo possível
+- **Estruturação**: Adiciona títulos, parágrafos, listas e formatação markdown apropriada
+- **Fallback**: Se não disponível, usa formatação básica
 
 ### 3. Classifier (`lib/services/classifier.ts`)
 
@@ -196,9 +212,33 @@ O sistema foi completamente paralelizado para melhorar a performance:
 
 Ver [Guia de Paralelização](../guides/paralelizacao.md) para detalhes.
 
-## Melhorias Futuras
+## Funcionalidades do Dashboard
+
+### Chat RAG com Múltiplos Modelos
+
+O sistema de chat suporta múltiplos modelos de IA:
+
+- **OpenAI**: GPT-4o, GPT-4o Mini
+- **Google Gemini**: 2.0 Flash, 2.0 Flash Lite, 2.5 Flash, 2.5 Flash Lite
+- **Seleção Dinâmica**: Usuário pode escolher o modelo na interface
+- **Fallback Automático**: Se o modelo selecionado falhar, usa GPT-4o Mini
+
+Ver [Guia do Dashboard](../guides/dashboard.md) para detalhes.
+
+### Reprocessamento e Regeneração
+
+O dashboard permite:
+
+- **Reprocessamento Completo**: Upload de novo arquivo e reprocessamento completo do documento
+- **Regeneração de Chunks**: Regenerar chunks e embeddings sem reprocessar o documento completo
+- **Edição de Markdown**: Editar markdown diretamente na interface
+- **Preview de Markdown**: Visualizar markdown renderizado
+
+### Melhorias Futuras
 
 - Chunking mais inteligente baseado em contexto jurídico
 - Cache de embeddings para reprocessamento
 - Auto-ajuste de concorrência baseado em rate limits
 - Dashboard de monitoramento em tempo real
+- Cache de resultados de estruturação com Gemini
+- Histórico de edições de markdown

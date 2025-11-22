@@ -9,13 +9,7 @@ docs/
 ├── INDEX.md                    # Este arquivo
 ├── README.md                   # Visão geral do sistema
 │
-├── implementation-progress/    # Progresso da Implementação (NOVO)
-│   ├── RESUMO-EXECUTIVO.md    # Resumo do progresso
-│   ├── fase-1-setup.md        # Progresso Fase 1
-│   ├── fase-2-autenticacao.md # Progresso Fase 2
-│   ├── fase-3-dashboard.md    # Progresso Fase 3
-│   ├── fase-4-upload.md       # Progresso Fase 4
-│   └── fase-5-lista-detalhes.md # Progresso Fase 5
+├── CHANGELOG-2025-11-21.md    # Changelog completo das mudanças de 21/11/2025
 │
 ├── setup/                      # Configuração e Setup
 │   ├── SETUP.md               # Guia completo de configuração
@@ -30,7 +24,8 @@ docs/
 │   ├── paralelizacao.md       # Guia de paralelização e performance
 │   ├── classificacao.md       # Guia de classificação de documentos
 │   ├── troubleshooting.md    # Guia de troubleshooting e scripts utilitários
-│   └── dashboard.md           # Guia de uso do Dashboard
+│   ├── dashboard.md           # Guia de uso do Dashboard
+│   └── gemini-integration.md  # Guia de integração com Google Gemini
 │
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
@@ -138,9 +133,21 @@ Guia de uso do Dashboard:
 - Dashboard principal (estatísticas e gráficos)
 - Upload de arquivos
 - Lista e detalhes de arquivos
-- Chat RAG
+- Chat RAG com múltiplos modelos
+- Preview e edição de markdown
+- Reprocessamento e regeneração de chunks
 - Navegação
 - Troubleshooting específico do dashboard
+
+### [gemini-integration.md](./guides/gemini-integration.md)
+
+Guia de integração com Google Gemini:
+
+- Configuração da API key
+- Estruturação de markdown com Gemini
+- Uso de modelos Gemini no chat RAG
+- Troubleshooting
+- Melhores práticas
 
 ## Referência Técnica
 
@@ -197,6 +204,17 @@ Referência de APIs do Dashboard:
 3. **Workers**: Consulte [worker-threads.md](./reference/worker-threads.md)
 
 ## Últimas Implementações
+
+### Integração Google Gemini e Melhorias (2025-11-21)
+
+- ✅ **Estruturação de Markdown com Gemini**: Estruturação opcional de PDF/DOC usando Google Gemini 2.0 Flash
+- ✅ **Múltiplos Modelos de Chat**: Suporte a OpenAI (GPT-4o, GPT-4o Mini) e Google Gemini (2.0/2.5 Flash)
+- ✅ **Preview de Markdown**: Visualização renderizada e edição de markdown na interface
+- ✅ **Reprocessamento Completo**: Reprocessar documento completo com novo arquivo
+- ✅ **Regeneração de Chunks**: Regenerar chunks e embeddings sem reprocessar o documento
+- ✅ **Melhorias no Frontend**: Paginação, tema claro/escuro, refatoração de componentes
+
+Ver [CHANGELOG-2025-11-21.md](./CHANGELOG-2025-11-21.md) para detalhes completos.
 
 ### Dashboard Frontend (2024-11-20)
 

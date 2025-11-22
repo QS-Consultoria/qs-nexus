@@ -194,9 +194,21 @@ Se o arquivo foi processado com sucesso, você verá:
 - **Qualidade**: GOLD ou SILVER (se aplicável)
 - **Resumo**: Resumo gerado (se disponível)
 
-#### Preview do Markdown
+#### Preview e Edição do Markdown
 
-Preview truncado do conteúdo Markdown convertido do DOCX.
+A página de detalhes permite visualizar e editar o markdown do documento:
+
+- **Modo Preview**: Visualização renderizada do markdown usando `react-markdown`
+- **Modo Code**: Visualização do código markdown bruto
+- **Toggle**: Botão para alternar entre preview e código
+- **Edição**: Edição inline do markdown com salvamento
+- **Salvamento**: Salva alterações diretamente no banco de dados
+
+**Como usar**:
+1. Clique no botão "Ver Preview" para ver o markdown renderizado
+2. Clique no botão "Ver Código" para voltar ao código
+3. Clique em "Editar" para editar o markdown
+4. Faça suas alterações e clique em "Salvar"
 
 #### Chunks
 
@@ -207,7 +219,20 @@ Se o arquivo foi chunked e teve embeddings gerados, você verá:
 - Seção e role (se disponíveis)
 - Tamanho do chunk
 
-**Nota**: A funcionalidade de "Reprocessar" para arquivos falhados está pendente.
+#### Reprocessamento e Regeneração
+
+A página de detalhes oferece duas opções de reprocessamento:
+
+**1. Reprocessamento Completo**:
+- Permite fazer upload de um novo arquivo para substituir o existente
+- Reprocessa completamente o documento (conversão, classificação, chunking, embeddings)
+- Deleta chunks antigos antes de reprocessar
+- Útil para corrigir documentos mal processados ou atualizar versões
+
+**2. Regeneração de Chunks**:
+- Regenera chunks e embeddings sem reprocessar o documento completo
+- Usa o markdown atual do documento
+- Útil quando o markdown foi editado manualmente ou quando se quer ajustar a estratégia de chunking
 
 ## Chat RAG
 
@@ -215,27 +240,49 @@ A página de chat (`/chat`) permite fazer perguntas sobre os documentos processa
 
 ### Como Usar o Chat
 
-1. Digite sua pergunta na caixa de texto na parte inferior
-2. Pressione Enter ou clique no botão de enviar
-3. A resposta será gerada em tempo real (streaming)
-4. Continue a conversa fazendo mais perguntas
+1. **Selecione o Modelo**: Escolha o modelo de IA que deseja usar no seletor no topo do chat
+2. Digite sua pergunta na caixa de texto na parte inferior
+3. Pressione Enter ou clique no botão de enviar
+4. A resposta será gerada em tempo real (streaming)
+5. Continue a conversa fazendo mais perguntas
+
+### Modelos Disponíveis
+
+O chat suporta múltiplos modelos de IA:
+
+**OpenAI**:
+- **GPT-4o Mini** (padrão): Modelo rápido e econômico, ideal para uso geral
+- **GPT-4o**: Modelo mais poderoso, ideal para tarefas complexas
+
+**Google Gemini**:
+- **Gemini 2.0 Flash**: Modelo rápido e eficiente
+- **Gemini 2.0 Flash Lite**: Versão mais leve e econômica
+- **Gemini 2.5 Flash**: Versão mais recente e melhorada
+- **Gemini 2.5 Flash Lite**: Versão lite da 2.5
+
+**Recomendações**:
+- Para uso geral: GPT-4o Mini ou Gemini 2.0 Flash Lite
+- Para tarefas complexas: GPT-4o ou Gemini 2.5 Flash
+- Para economia: Gemini 2.0/2.5 Flash Lite
 
 ### Funcionamento
 
 O chat funciona da seguinte forma:
 
 1. **Busca Vetorial**: Sua pergunta é convertida em um embedding e comparada com todos os chunks no banco de dados
-2. **Seleção de Contexto**: Os chunks mais similares (similaridade >= 70%) são selecionados
+2. **Seleção de Contexto**: Os chunks mais similares (similaridade >= 50%) são selecionados
 3. **Construção de Contexto**: Os chunks são organizados em um contexto estruturado
-4. **Geração de Resposta**: A IA (GPT-4o-mini) gera uma resposta baseada apenas no contexto encontrado
+4. **Geração de Resposta**: A IA (modelo selecionado) gera uma resposta baseada apenas no contexto encontrado
 5. **Streaming**: A resposta é enviada em tempo real para melhor UX
 
 ### Limitações
 
 - O chat só responde com base nos documentos processados e indexados
 - Se não houver informação relevante, a IA informará que não tem essa informação
-- A similaridade mínima é de 70% - chunks menos similares são ignorados
+- A similaridade mínima é de 50% - chunks menos similares são ignorados
 - O histórico de conversa é limitado às últimas 6 mensagens (3 turnos)
+- Cada modelo tem suas próprias limitações e características
+- Alguns modelos podem ter rate limits diferentes
 
 ### Dicas de Uso
 
@@ -316,8 +363,10 @@ O navbar no topo contém:
 
 **Chat não responde**
 
-- Verifique se `OPENAI_API_KEY` está configurado
+- Verifique se `OPENAI_API_KEY` está configurado (para modelos OpenAI)
+- Verifique se `GOOGLE_GENERATIVE_AI_API_KEY` está configurado (para modelos Gemini)
 - Verifique a conexão com a internet
+- Tente trocar de modelo (pode ser um problema específico do modelo)
 - Veja os logs do servidor para erros
 
 **Respostas genéricas**
