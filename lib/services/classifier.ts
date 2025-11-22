@@ -54,32 +54,124 @@ export interface ClassificationResult {
 
 /**
  * Valida se a classificação retornada está vazia ou inválida
+ * Agora valida dinamicamente baseado no schema ativo configurado
  */
-function validateClassification(result: ClassificationResult, markdownPreview: string): void {
+async function validateClassification(
+  result: any,
+  markdownPreview: string,
+  schemaConfigId?: string
+): Promise<void> {
+  try {
+    // Carrega schema ativo
+    const schemaConfig = await loadTemplateSchemaConfig(schemaConfigId)
+    
+    // Constrói schema Zod para validação
+    const validationSchema = buildZodSchemaFromConfig(schemaConfig)
+    
+    // Valida estrutura usando Zod
+    const validationResult = validationSchema.safeParse(result)
+    
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => {
+        const path = err.path.join('.')
+        return `${path}: ${err.message}`
+      })
+      
+      const errorDetails = {
+        result,
+        errors,
+        markdownPreview: markdownPreview.substring(0, 500) + (markdownPreview.length > 500 ? '...' : ''),
+        schemaConfig: {
+          id: schemaConfig.id,
+          name: schemaConfig.name,
+          fields: schemaConfig.fields.map(f => ({
+            name: f.name,
+            type: f.type,
+            required: f.required !== false, // Por padrão é obrigatório
+          })),
+        },
+      }
+
+      console.error('\n❌ ERRO CRÍTICO: Classificação falhou na validação!')
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('Erros de validação:')
+      console.error(JSON.stringify(errors, null, 2))
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('Detalhes da resposta recebida:')
+      console.error(JSON.stringify(errorDetails, null, 2))
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('\n🛑 PARANDO CLASSIFICAÇÃO PARA DEBUG\n')
+
+      throw new Error(
+        `Classificação falhou na validação: ${errors.join('; ')}`
+      )
+    }
+    
+    // Valida campos obrigatórios que podem estar vazios (strings vazias, arrays vazios, etc)
+    const missingFields: string[] = []
+    
+    for (const field of schemaConfig.fields) {
+      const isRequired = field.required !== false // Por padrão é obrigatório
+      
+      if (isRequired) {
+        const fieldValue = result[field.name]
+        
+        // Verifica se o campo está presente e não vazio
+        if (fieldValue === undefined || fieldValue === null) {
+          missingFields.push(`${field.name} (ausente)`)
+        } else if (field.type === 'string' && typeof fieldValue === 'string' && fieldValue.trim() === '') {
+          missingFields.push(`${field.name} (string vazia)`)
+        } else if (field.type === 'array' && Array.isArray(fieldValue) && fieldValue.length === 0) {
+          // Arrays vazios podem ser válidos dependendo do contexto, mas vamos alertar
+          // Por enquanto, não vamos considerar array vazio como erro
+        }
+      }
+    }
+    
+    if (missingFields.length > 0) {
+      const errorDetails = {
+        result,
+        missingFields,
+        markdownPreview: markdownPreview.substring(0, 500) + (markdownPreview.length > 500 ? '...' : ''),
+        schemaConfig: {
+          id: schemaConfig.id,
+          name: schemaConfig.name,
+          requiredFields: schemaConfig.fields
+            .filter(f => f.required !== false)
+            .map(f => ({ name: f.name, type: f.type })),
+        },
+      }
+
+      console.error('\n❌ ERRO CRÍTICO: Classificação retornou campos obrigatórios vazios!')
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('Campos obrigatórios faltando ou vazios:')
+      console.error(JSON.stringify(missingFields, null, 2))
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('Detalhes da resposta recebida:')
+      console.error(JSON.stringify(errorDetails, null, 2))
+      console.error('═══════════════════════════════════════════════════════════')
+      console.error('\n🛑 PARANDO CLASSIFICAÇÃO PARA DEBUG\n')
+
+      throw new Error(
+        `Classificação retornou campos obrigatórios vazios: ${missingFields.join(', ')}`
+      )
+    }
+  } catch (error) {
+    // Se não conseguir carregar schema dinâmico, usa validação básica como fallback
+    if (error instanceof Error && error.message.includes('não encontrado')) {
+      console.warn('⚠️  Schema dinâmico não encontrado, usando validação básica como fallback')
+      
+      // Validação básica para campos comuns
   const isEmpty =
     !result.title ||
     result.title.trim() === '' ||
     !result.summary ||
-    result.summary.trim() === '' ||
-    !result.docType ||
-    !result.area ||
-    !result.complexity ||
-    result.qualityScore === undefined ||
-    result.qualityScore === null
+        result.summary.trim() === ''
 
   if (isEmpty) {
     const errorDetails = {
-      title: result.title || '(vazio)',
-      summary: result.summary || '(vazio)',
-      docType: result.docType || '(vazio)',
-      area: result.area || '(vazio)',
-      complexity: result.complexity || '(vazio)',
-      qualityScore: result.qualityScore ?? '(vazio)',
-      jurisdiction: result.jurisdiction || '(vazio)',
-      tags: result.tags || [],
-      sections: result.sections || [],
-      markdownPreview:
-        markdownPreview.substring(0, 500) + (markdownPreview.length > 500 ? '...' : ''),
+          result,
+          markdownPreview: markdownPreview.substring(0, 500) + (markdownPreview.length > 500 ? '...' : ''),
     }
 
     console.error('\n❌ ERRO CRÍTICO: Classificação retornou dados vazios!')
@@ -91,10 +183,13 @@ function validateClassification(result: ClassificationResult, markdownPreview: s
 
     throw new Error(
       `Classificação retornou dados vazios. ` +
-        `Title: "${result.title}", Summary: "${result.summary}", ` +
-        `DocType: "${result.docType}", Area: "${result.area}", ` +
-        `Complexity: "${result.complexity}", QualityScore: ${result.qualityScore}`
+            `Title: "${result.title}", Summary: "${result.summary}"`
     )
+      }
+    } else {
+      // Propaga outros erros
+      throw error
+    }
   }
 }
 
@@ -185,7 +280,7 @@ export async function classifyDocument(
   markdown: string,
   configId?: string,
   onProgress?: (message: string) => void
-): Promise<ClassificationResult> {
+): Promise<ClassificationResult | Record<string, any>> {
   // Carrega configuração
   const config = await loadConfigFromDB(configId)
 
@@ -204,10 +299,19 @@ export async function classifyDocument(
   const classificationModel = parseClassificationModel(config.modelName, config.modelProvider)
   const { model } = getClassificationModelProvider(classificationModel)
 
+  // Carrega schema config para obter o ID (necessário para validação)
+  let schemaConfigId: string | undefined
+  try {
+    const schemaConfig = await loadTemplateSchemaConfig()
+    schemaConfigId = schemaConfig.id
+  } catch (error) {
+    console.warn('⚠️  Não foi possível carregar schema config para validação:', error)
+  }
+
   // Constrói schema dinâmico baseado no schema config do template
   // Tenta usar o schema do template associado, se disponível
   // Por enquanto, usa schema padrão (será melhorado na Fase 4 com API)
-  const classificationSchema = await buildClassificationSchema()
+  const classificationSchema = await buildClassificationSchema(schemaConfigId)
 
   // Loga início da classificação
   onProgress?.('⏳ Iniciando classificação...')
@@ -228,16 +332,23 @@ export async function classifyDocument(
       ],
     })
 
-    // Aplica valores padrão para campos que podem não ter sido retornados
-    const result: ClassificationResult = {
-      ...object,
-      jurisdiction: object.jurisdiction || 'BR',
-      tags: object.tags || [],
-      sections: object.sections || [],
+    // Resultado da classificação (pode ser dinâmico baseado no schema)
+    // Aplica valores padrão apenas se o schema ainda usar esses campos
+    const result: any = { ...object }
+    
+    // Valores padrão para compatibilidade com código legado (se campos existirem no schema)
+    if ('jurisdiction' in object && !object.jurisdiction) {
+      result.jurisdiction = 'BR'
+    }
+    if ('tags' in object && !object.tags) {
+      result.tags = []
+    }
+    if ('sections' in object && !object.sections) {
+      result.sections = []
     }
 
-    // Valida se a classificação não está vazia
-    validateClassification(result, processedMarkdown)
+    // Valida se a classificação não está vazia usando schema dinâmico
+    await validateClassification(result, processedMarkdown, schemaConfigId)
 
     // Loga fim da classificação
     onProgress?.('✅ Classificação concluída')
@@ -286,16 +397,23 @@ export async function classifyDocument(
           ],
         })
 
-        // Aplica valores padrão para campos que podem não ter sido retornados
-        const fallbackResult: ClassificationResult = {
-          ...object,
-          jurisdiction: object.jurisdiction || 'BR',
-          tags: object.tags || [],
-          sections: object.sections || [],
+        // Resultado da classificação (pode ser dinâmico baseado no schema)
+        // Aplica valores padrão apenas se o schema ainda usar esses campos
+        const fallbackResult: any = { ...object }
+        
+        // Valores padrão para compatibilidade com código legado (se campos existirem no schema)
+        if ('jurisdiction' in object && !object.jurisdiction) {
+          fallbackResult.jurisdiction = 'BR'
+        }
+        if ('tags' in object && !object.tags) {
+          fallbackResult.tags = []
+        }
+        if ('sections' in object && !object.sections) {
+          fallbackResult.sections = []
         }
 
-        // Valida se a classificação não está vazia
-        validateClassification(fallbackResult, fallbackMarkdown)
+        // Valida se a classificação não está vazia usando schema dinâmico
+        await validateClassification(fallbackResult, fallbackMarkdown, schemaConfigId)
 
         // Loga fim da classificação (fallback)
         onProgress?.('✅ Classificação concluída')
@@ -313,27 +431,53 @@ export async function classifyDocument(
 
 /**
  * Cria um TemplateDocument completo a partir da classificação e markdown
+ * Agora aceita resultado dinâmico baseado no schema configurado
  */
 export function createTemplateDocument(
-  classification: ClassificationResult,
+  classification: ClassificationResult | Record<string, any>,
   markdown: string,
   documentFileId: string
 ): TemplateDocument {
+  // Extrai campos de forma segura (com fallback para valores padrão)
+  const title = (classification as any).title || ''
+  const docType = (classification as any).docType || 'outro'
+  const area = (classification as any).area || 'outro'
+  const jurisdiction = (classification as any).jurisdiction || 'BR'
+  const complexity = (classification as any).complexity || 'medio'
+  const tags = Array.isArray((classification as any).tags) ? (classification as any).tags : []
+  const summary = (classification as any).summary || ''
+  const qualityScore = typeof (classification as any).qualityScore === 'number' 
+    ? (classification as any).qualityScore 
+    : undefined
+  const sections = Array.isArray((classification as any).sections) 
+    ? (classification as any).sections 
+    : undefined
+
+  // Extrai outros campos dinâmicos que não são parte do TemplateDocument base
+  // mas que devem ir para metadata
+  const dynamicMetadata: Record<string, any> = { sections }
+  
+  // Adiciona outros campos que não são parte do schema base
+  const baseFields = ['title', 'docType', 'area', 'jurisdiction', 'complexity', 'tags', 'summary', 'qualityScore', 'sections']
+  for (const [key, value] of Object.entries(classification)) {
+    if (!baseFields.includes(key)) {
+      dynamicMetadata[key] = value
+    }
+  }
+
   return {
     id: documentFileId,
-    title: classification.title,
-    docType: classification.docType,
-    area: classification.area,
-    jurisdiction: classification.jurisdiction,
-    complexity: classification.complexity,
-    tags: classification.tags,
-    summary: classification.summary,
+    title,
+    docType: docType as TemplateDocument['docType'],
+    area: area as TemplateDocument['area'],
+    jurisdiction,
+    complexity: complexity as TemplateDocument['complexity'],
+    tags,
+    summary,
     markdown,
-    metadata: {
-      sections: classification.sections,
-    },
-    qualityScore: classification.qualityScore,
-    isGold: classification.qualityScore > 60,
-    isSilver: classification.qualityScore >= 56 && classification.qualityScore <= 60,
+    metadata: dynamicMetadata,
+    qualityScore,
+    isGold: qualityScore !== undefined && qualityScore > 60,
+    isSilver: qualityScore !== undefined && qualityScore >= 56 && qualityScore <= 60,
   }
 }

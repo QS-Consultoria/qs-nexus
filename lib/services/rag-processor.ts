@@ -189,10 +189,14 @@ export async function processFile(
     // Etapa 3: Classificar documento
     reportProgress(3, 'Classificando documento...', 50)
 
-    const classification = await classifyDocument(cleanedMarkdown, message => {
-      // Log de progresso da classificação
-      console.log(`  [${fileName}] ${message}`)
-    })
+    const classification = await classifyDocument(
+      cleanedMarkdown,
+      undefined, // configId - usa configuração ativa
+      message => {
+        // Log de progresso da classificação
+        console.log(`  [${fileName}] ${message}`)
+      }
+    )
 
     const templateDoc = createTemplateDocument(classification, cleanedMarkdown, fileInfo!.id)
     const templateId = await storeTemplate(templateDoc, fileInfo!.id)

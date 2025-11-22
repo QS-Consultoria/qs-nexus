@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProcessingStatus } from '@/lib/services/file-tracker'
 import { db } from '@/lib/db/index'
 import { documentFiles, templates } from '@/lib/db/schema/rag'
-import { eq, sql } from 'drizzle-orm'
+import { sql, desc } from 'drizzle-orm'
 
 // Cache por 30 segundos
 export const revalidate = 30
@@ -12,36 +12,45 @@ export async function GET() {
     // Status geral
     const status = await getProcessingStatus()
 
-    // Estatísticas por área jurídica
-    const areaStats = await db
+    // Buscar todos os templates com campos do metadata para agrupamento
+    const allTemplates = await db
       .select({
-        area: templates.area,
-        count: sql<number>`count(*)::int`,
+        area: sql<string | null>`${templates.metadata}->>'area'`,
+        docType: sql<string | null>`${templates.metadata}->>'docType'`,
+        isGold: sql<string | null>`${templates.metadata}->>'isGold'`,
+        isSilver: sql<string | null>`${templates.metadata}->>'isSilver'`,
       })
       .from(templates)
-      .groupBy(templates.area)
+
+    // Estatísticas por área jurídica
+    const areaMap = new Map<string, number>()
+    for (const template of allTemplates) {
+      if (template.area) {
+        areaMap.set(template.area, (areaMap.get(template.area) || 0) + 1)
+      }
+    }
+    const areaStats = Array.from(areaMap.entries()).map(([area, count]) => ({
+      area,
+      count,
+    }))
 
     // Estatísticas por tipo de documento
-    const docTypeStats = await db
-      .select({
-        docType: templates.docType,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(templates)
-      .groupBy(templates.docType)
+    const docTypeMap = new Map<string, number>()
+    for (const template of allTemplates) {
+      if (template.docType) {
+        docTypeMap.set(template.docType, (docTypeMap.get(template.docType) || 0) + 1)
+      }
+    }
+    const docTypeStats = Array.from(docTypeMap.entries()).map(([docType, count]) => ({
+      docType,
+      count,
+    }))
 
     // Documentos GOLD e SILVER
-    const goldCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(templates)
-      .where(eq(templates.isGold, true))
+    const goldCount = allTemplates.filter((t) => t.isGold === 'true').length
+    const silverCount = allTemplates.filter((t) => t.isSilver === 'true').length
 
-    const silverCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(templates)
-      .where(eq(templates.isSilver, true))
-
-    // Últimos arquivos processados
+    // Últimos arquivos processados (mais recentes primeiro)
     const recentFiles = await db
       .select({
         id: documentFiles.id,
@@ -52,15 +61,15 @@ export async function GET() {
         updatedAt: documentFiles.updatedAt,
       })
       .from(documentFiles)
-      .orderBy(documentFiles.updatedAt)
+      .orderBy(desc(documentFiles.updatedAt))
       .limit(10)
 
     return NextResponse.json({
       summary: status,
       byArea: areaStats,
       byDocType: docTypeStats,
-      gold: goldCount[0]?.count || 0,
-      silver: silverCount[0]?.count || 0,
+      gold: goldCount,
+      silver: silverCount,
       recentFiles: recentFiles,
     })
   } catch (error) {
