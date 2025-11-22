@@ -18,11 +18,15 @@ docs/
 ├── architecture/               # Arquitetura e Dados
 │   ├── ARQUITETURA.md         # Arquitetura detalhada do sistema
 │   ├── DADOS.md               # Estrutura de dados e schema
-│   └── DASHBOARD.md           # Arquitetura do Dashboard
+│   ├── DASHBOARD.md           # Arquitetura do Dashboard
+│   ├── PRD-CLASSIFICACAO-CONFIGURAVEL.md  # Product Requirements Document
+│   └── TECH-SPECS-CLASSIFICACAO.md       # Technical Specifications
 │
 ├── guides/                     # Guias de Uso
 │   ├── paralelizacao.md       # Guia de paralelização e performance
 │   ├── classificacao.md       # Guia de classificação de documentos
+│   ├── classificacao-configuravel.md  # Guia de classificação configurável
+│   ├── schema-dinamico.md    # Guia de schema dinâmico de templates
 │   ├── troubleshooting.md    # Guia de troubleshooting e scripts utilitários
 │   ├── dashboard.md           # Guia de uso do Dashboard
 │   └── gemini-integration.md  # Guia de integração com Google Gemini
@@ -30,7 +34,8 @@ docs/
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
     ├── worker-threads.md      # Documentação de Worker Threads
-    └── dashboard-api.md       # Referência de APIs do Dashboard
+    ├── dashboard-api.md       # Referência de APIs do Dashboard
+    └── classification-api.md  # Referência de APIs de Classificação e Schema
 ```
 
 ## Documentos Principais
@@ -96,6 +101,28 @@ Arquitetura do Dashboard:
 - Integração com sistema RAG existente
 - Componentes e hooks
 
+### [PRD-CLASSIFICACAO-CONFIGURAVEL.md](./architecture/PRD-CLASSIFICACAO-CONFIGURAVEL.md)
+
+Product Requirements Document do sistema de classificação configurável:
+
+- Objetivos e visão geral
+- Requisitos funcionais e não-funcionais
+- Escopo e métricas de sucesso
+- Riscos e mitigações
+- Roadmap de implementação
+
+### [TECH-SPECS-CLASSIFICACAO.md](./architecture/TECH-SPECS-CLASSIFICACAO.md)
+
+Technical Specifications detalhadas:
+
+- Arquitetura técnica completa
+- Estrutura de dados e tipos
+- Serviços e componentes
+- APIs e endpoints
+- Front-end e componentes
+- Migração de dados
+- Segurança e performance
+
 ## Guias
 
 ### [paralelizacao.md](./guides/paralelizacao.md)
@@ -115,6 +142,29 @@ Guia de classificação de documentos:
 - Limitações da API e soluções implementadas
 - Logging de progresso
 - Tratamento de erros
+
+### [classificacao-configuravel.md](./guides/classificacao-configuravel.md)
+
+Guia de classificação configurável:
+
+- Como criar e configurar classificações
+- Múltiplos providers e modelos
+- System prompt customizado
+- Função de extração customizada
+- Limites de tokens
+- Truncamento inteligente
+- Dicas e melhores práticas
+
+### [schema-dinamico.md](./guides/schema-dinamico.md)
+
+Guia de schema dinâmico de templates:
+
+- Como criar e configurar schemas
+- Tipos de campo disponíveis
+- Campos aninhados e arrays
+- Validação e preview
+- Como o sistema funciona
+- Dicas e melhores práticas
 
 ### [troubleshooting.md](./guides/troubleshooting.md)
 
@@ -180,6 +230,17 @@ Referência de APIs do Dashboard:
 - Códigos de erro
 - Exemplos de uso
 
+### [classification-api.md](./reference/classification-api.md)
+
+Referência de APIs de Classificação e Schema:
+
+- Classification Config API (CRUD completo)
+- Template Schema API (CRUD completo)
+- Classification API (classificar documentos)
+- Exemplos de uso
+- Códigos de erro
+- Limites e restrições
+
 ## Como Usar Esta Documentação
 
 ### Para Iniciantes
@@ -204,6 +265,28 @@ Referência de APIs do Dashboard:
 3. **Workers**: Consulte [worker-threads.md](./reference/worker-threads.md)
 
 ## Últimas Implementações
+
+### Sistema de Classificação Configurável e Schema Dinâmico (2025-01-22)
+
+- ✅ **Classificação Configurável**: Sistema completo para configurar classificação via interface web
+- ✅ **Múltiplos Providers**: Suporte a OpenAI e Google/Gemini com seleção de modelo
+- ✅ **Schema Dinâmico**: Templates com campos configuráveis definidos pelo usuário
+- ✅ **Tipos Zod Completos**: Suporte a todos os tipos relevantes (string, number, boolean, date, bigint, enum, literal, array, object, union)
+- ✅ **Campos Aninhados**: Suporte a objetos e arrays de objetos recursivos
+- ✅ **Estimativa de Tokens**: Uso de tiktoken para estimativa precisa
+- ✅ **Função de Extração Customizada**: Função JavaScript customizada para extrair conteúdo
+- ✅ **Truncamento Inteligente**: Baseado em limites de tokens do modelo
+- ✅ **Interface Completa**: Página de settings com configuração de classificação e schema
+- ✅ **Migração de Dados**: 2365 templates migrados para formato JSONB
+
+Ver [Documentação de Progresso](./implementation-progress/classificacao-configuravel-schema-dinamico.md) para detalhes completos.
+
+Documentação:
+- [PRD](./architecture/PRD-CLASSIFICACAO-CONFIGURAVEL.md)
+- [Tech Specs](./architecture/TECH-SPECS-CLASSIFICACAO.md)
+- [Guia de Classificação Configurável](./guides/classificacao-configuravel.md)
+- [Guia de Schema Dinâmico](./guides/schema-dinamico.md)
+- [Referência de API](./reference/classification-api.md)
 
 ### Integração Google Gemini e Melhorias (2025-11-21)
 

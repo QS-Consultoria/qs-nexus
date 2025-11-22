@@ -72,16 +72,25 @@ Serviço opcional que usa Google Gemini para estruturar texto extraído:
 
 ### 3. Classifier (`lib/services/classifier.ts`)
 
-- **Modelo**: GPT-5 via AI SDK
-- **Output**: TemplateDocument completo
-- **Metadados**: docType, area, jurisdiction, complexity, tags, summary, qualityScore
-- **Classificação Automática**: GOLD (>60) e SILVER (56-60)
-- **Truncamento Inteligente**: Trunca documentos grandes mantendo início e fim
+Sistema de classificação configurável e refatorado:
+
+- **Modelos Configuráveis**: Suporte a múltiplos providers (OpenAI, Google/Gemini) via configurações
+- **Schema Dinâmico**: Gera schema Zod dinamicamente baseado em configuração de template
+- **Estimativa de Tokens**: Usa `tiktoken` para estimativa precisa de tokens (com fallback)
+- **Extração de Conteúdo**: Função padrão ou customizada (JavaScript) para extrair partes relevantes
+- **Truncamento Inteligente**: Baseado em limites de tokens do modelo com margem para output
 - **Validação de Respostas**: Detecta e para processamento se IA retornar dados vazios
 - **Logging de Progresso**: Callbacks para acompanhar início/fim de cada classificação
 - **Tratamento de Erros**: Retry automático para rate limits e fallback para documentos grandes
 
-Ver [Guia de Classificação](../guides/classificacao.md) para detalhes completos sobre decisões de design e limitações.
+**Componentes Relacionados**:
+- `lib/services/classification-config.ts`: CRUD de configurações de classificação
+- `lib/services/content-extraction.ts`: Funções de extração de conteúdo
+- `lib/services/content-truncation.ts`: Lógica de truncamento inteligente
+- `lib/services/schema-builder.ts`: Geração de schema Zod dinâmico
+- `lib/services/template-schema-service.ts`: CRUD de schemas de template
+
+Ver [Guia de Classificação](../guides/classificacao.md) e [Guia de Classificação Configurável](../guides/classificacao-configuravel.md) para detalhes completos.
 
 ### 4. Chunker (`lib/services/chunker.ts`)
 
@@ -102,6 +111,7 @@ Ver [Guia de Classificação](../guides/classificacao.md) para detalhes completo
 - **Armazenamento**: Templates e chunks no Neon
 - **Batch Insert**: 500 registros por batch
 - **Transações**: Garantia de consistência
+- **Schema Dinâmico**: Busca schema config ativo automaticamente e armazena campos no metadata JSONB
 
 ### 7. ConcurrencyPool (`lib/utils/concurrency-pool.ts`)
 
@@ -125,9 +135,56 @@ Processamento isolado de conversão DOCX → Markdown:
 
 Ver [Documentação de Worker Threads](../reference/worker-threads.md) para detalhes.
 
+### 9. Sistema de Classificação Configurável
+
+Sistema completo para configurar classificação e schema de templates:
+
+#### 9.1. Configuração de Classificação (`lib/services/classification-config.ts`)
+
+- **CRUD Completo**: Criar, ler, atualizar e deletar configurações
+- **Múltiplos Providers**: OpenAI e Google/Gemini
+- **Limites de Tokens**: Configuráveis por modelo
+- **Função de Extração**: Padrão ou customizada (JavaScript)
+- **Configuração Ativa**: Apenas uma configuração ativa por vez
+- **Validação**: Valida limites de tokens e código JavaScript customizado
+
+#### 9.2. Schema Dinâmico de Templates (`lib/services/template-schema-service.ts`)
+
+- **CRUD Completo**: Criar, ler, atualizar e deletar schemas
+- **Tipos Zod Completos**: Suporte a string, number, boolean, date, bigint, enum, literal, array, object, union
+- **Campos Aninhados**: Suporte a objetos e arrays de objetos recursivos
+- **Validação**: Valida definições de campos antes de salvar
+- **Schema Ativo**: Apenas um schema ativo por vez
+- **Geração Dinâmica**: Gera schema Zod em tempo de execução
+
+#### 9.3. Geração de Schema Zod (`lib/services/schema-builder.ts`)
+
+- **Construção Dinâmica**: Gera schema Zod baseado em definições de campos
+- **Tipos Complexos**: Suporte completo a arrays, objetos, unions
+- **Validação Recursiva**: Valida campos aninhados recursivamente
+- **Documentação**: Suporte a `.describe()` para documentação de campos
+
+#### 9.4. Estimativa de Tokens (`lib/utils/token-estimation.ts`)
+
+- **tiktoken**: Estimativa precisa para modelos OpenAI
+- **Fallback**: Aproximação para modelos Google
+- **Suporte Multi-Modelo**: Diferentes encodings por modelo
+
+#### 9.5. Extração de Conteúdo (`lib/services/content-extraction.ts`)
+
+- **Função Padrão**: Extrai início, estrutura e fim do documento
+- **Função Customizada**: Executa código JavaScript do banco (com validação de segurança)
+- **Validação de Segurança**: Bloqueia require, import, eval, etc.
+
+#### 9.6. Truncamento Inteligente (`lib/services/content-truncation.ts`)
+
+- **Cálculo de Tokens Disponíveis**: Considera system prompt, user prompt e margem para output
+- **Decisão Automática**: Escolhe entre extração e truncamento direto
+- **Preservação**: Mantém início e fim do documento ao truncar
+
 ## Estrutura de Dados
 
-### TemplateDocument
+### TemplateDocument (Legado)
 
 ```typescript
 {
@@ -147,6 +204,22 @@ Ver [Documentação de Worker Threads](../reference/worker-threads.md) para deta
 }
 ```
 
+### DynamicTemplateDocument (Novo)
+
+Templates agora suportam campos dinâmicos definidos por schema configurável:
+
+```typescript
+{
+  id?: string;
+  title: string;
+  markdown: string;
+  metadata: Record<string, any>; // Campos dinâmicos definidos pelo schema
+  schemaConfigId: string; // Referência ao schema usado
+}
+```
+
+Os campos em `metadata` são definidos dinamicamente pelo `TemplateSchemaConfig` ativo.
+
 ### Banco de Dados
 
 #### Tabela: `document_files`
@@ -154,11 +227,26 @@ Ver [Documentação de Worker Threads](../reference/worker-threads.md) para deta
 - Tracking de arquivos processados
 - Caminho relativo, hash, status, palavras
 
-#### Tabela: `templates`
+#### Tabela: `templates` (Refatorada)
 
 - Documentos processados completos
-- TemplateDocument com todos os metadados
-- Relacionamento com `document_files`
+- **Campos Essenciais**: id, document_file_id, title, markdown
+- **Metadata JSONB**: Todos os campos configuráveis armazenados aqui
+- **Schema Config**: Referência ao schema ativo (`schema_config_id`)
+- **Migração**: Dados antigos migrados para metadata JSONB
+
+#### Tabela: `classification_configs` (Nova)
+
+- Configurações de classificação
+- System prompt, modelo, limites de tokens
+- Função de extração customizada (opcional)
+- Flag de configuração ativa
+
+#### Tabela: `template_schema_configs` (Nova)
+
+- Schemas de template configuráveis
+- Definições de campos (JSONB)
+- Flag de schema ativo
 
 #### Tabela: `template_chunks`
 
@@ -234,6 +322,24 @@ O dashboard permite:
 - **Edição de Markdown**: Editar markdown diretamente na interface
 - **Preview de Markdown**: Visualizar markdown renderizado
 
+### Sistema de Configuração
+
+O dashboard inclui uma página completa de configurações:
+
+- **Página Principal**: `/settings` com submenu de navegação
+- **Configuração de Classificação**: `/settings/classification`
+  - CRUD de configurações de classificação
+  - Editor de system prompt
+  - Seletor de modelo com limites de tokens
+  - Editor de função de extração customizada
+- **Schema de Template**: `/settings/template-schema`
+  - Editor visual de campos
+  - Suporte a todos os tipos Zod
+  - Preview em tempo real do schema gerado
+  - Campos aninhados e arrays
+
+Ver [Guia de Classificação Configurável](../guides/classificacao-configuravel.md) e [Guia de Schema Dinâmico](../guides/schema-dinamico.md) para detalhes.
+
 ### Melhorias Futuras
 
 - Chunking mais inteligente baseado em contexto jurídico
@@ -242,3 +348,4 @@ O dashboard permite:
 - Dashboard de monitoramento em tempo real
 - Cache de resultados de estruturação com Gemini
 - Histórico de edições de markdown
+- Índices GIN para campos JSONB frequentemente filtrados
