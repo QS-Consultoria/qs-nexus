@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { SettingsLayout } from '@/components/settings/settings-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { SchemaFieldEditor } from '@/components/settings/schema-field-editor'
 import { SchemaPreview } from '@/components/settings/schema-preview'
+import { validateTemplateSchemaConfig } from '@/lib/services/schema-builder'
 import { toast } from 'react-hot-toast'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, AlertCircle } from 'lucide-react'
 import { FieldDefinition, TemplateSchemaConfig } from '@/lib/types/template-schema'
 import {
   AlertDialog,
@@ -160,6 +162,13 @@ export default function TemplateSchemaSettingsPage() {
 
   const activeConfig = configs.find(c => c.isActive)
 
+  const validation = useMemo(() => {
+    return validateTemplateSchemaConfig({
+      name: formData.name,
+      fields: formData.fields,
+    })
+  }, [formData.name, formData.fields])
+
   return (
     <SettingsLayout>
       <div className="space-y-6">
@@ -233,8 +242,28 @@ export default function TemplateSchemaSettingsPage() {
                 </Label>
               </div>
 
+              {!validation.valid && validation.errors.length > 0 && (
+                <Card className="border-destructive">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        <p className="text-sm font-semibold text-destructive">
+                          Erros de validação:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+                          {validation.errors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex gap-2">
-                <Button type="submit">
+                <Button type="submit" disabled={!validation.valid}>
                   {editingId ? (
                     <>
                       <Check className="h-4 w-4 mr-2" />
@@ -254,6 +283,11 @@ export default function TemplateSchemaSettingsPage() {
                   </Button>
                 )}
               </div>
+              {!validation.valid && (
+                <p className="text-xs text-muted-foreground">
+                  Corrija os erros acima para salvar o schema
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>

@@ -440,23 +440,63 @@ Este documento rastreia o progresso da implementação do sistema de classifica�
 
 ### Limitações Conhecidas
 
-- Arrays de objetos requerem configuração adicional (não totalmente suportado na UI básica)
-- Objetos aninhados requerem configuração adicional (não totalmente suportado na UI básica)
-- Unions requerem configuração adicional (não totalmente suportado na UI básica)
-- Estes tipos podem ser configurados via API diretamente
+- ~~Arrays de objetos requerem configuração adicional (não totalmente suportado na UI básica)~~ ✅ **RESOLVIDO**
+- ~~Objetos aninhados requerem configuração adicional (não totalmente suportado na UI básica)~~ ✅ **RESOLVIDO**
+- ~~Unions requerem configuração adicional (não totalmente suportado na UI básica)~~ ✅ **RESOLVIDO**
+
+Todas as limitações foram resolvidas com a implementação do suporte completo a tipos complexos (ver seção abaixo).
+
+### Suporte Completo a Tipos Complexos - Implementado
+
+**Status**: ✅ Concluído
+
+**Data**: 2025-01-22
+
+#### Objetivos
+- Adicionar suporte completo na UI para arrays de objetos
+- Adicionar suporte completo na UI para objetos aninhados recursivamente
+- Adicionar suporte completo na UI para unions com configurações específicas
+- Melhorar validação em tempo real e feedback visual
+
+#### Arquivos Criados
+- `components/settings/nested-fields-editor.tsx` - Editor recursivo de campos aninhados
+
+#### Arquivos Modificados
+- `components/settings/schema-field-editor.tsx` - Suporte completo a tipos complexos
+- `components/settings/schema-preview.tsx` - Preview melhorado para tipos complexos recursivos
+- `app/(dashboard)/settings/template-schema/page.tsx` - Validação em tempo real
+
+#### Funcionalidades Implementadas
+- [x] Componente `NestedFieldsEditor` para editar campos aninhados recursivamente
+- [x] Suporte a arrays de objetos com configuração de `itemConfig`
+- [x] Suporte a objetos aninhados com edição recursiva de `objectFields`
+- [x] Suporte a unions com `unionTypes` e `unionConfigs` opcionais
+- [x] Validação em tempo real com feedback visual (badges, mensagens de erro)
+- [x] Preview do schema Zod completo mostrando estrutura recursiva
+- [x] Botão de salvar desabilitado quando há erros de validação
+- [x] Indentação visual para indicar níveis de aninhamento
+- [x] Limite de profundidade configurável (5 níveis)
+
+#### Decisões Técnicas
+1. **Editor Recursivo**: Componente `NestedFieldsEditor` reutilizável que renderiza `SchemaFieldEditor` para cada campo
+2. **Type Guards**: Uso de type guards (`isObjectField`, `isArrayField`, etc.) para garantir type safety
+3. **Validação em Tempo Real**: Integração com `validateFieldDefinition` e `validateTemplateSchemaConfig` do schema-builder
+4. **UX Melhorada**: Badges, mensagens de erro inline, e feedback visual claro
+5. **Preview Recursivo**: Função `formatFieldDefinition` recursiva para gerar preview completo do schema
+
+#### Notas Técnicas
+- Interface intuitiva e responsiva usando shadcn UI e Tailwind CSS
+- Componentes reutilizáveis e modulares
+- Validação de formulários no front-end com feedback em tempo real
+- Integração completa com APIs criadas na Fase 4
+- Preview em tempo real do schema Zod com suporte completo a tipos complexos
+- Suporte a todos os tipos Zod relevantes (string, number, boolean, date, bigint, enum, literal, array, object, union)
 
 ### Próximos Passos
 
 1. ✅ Fase 5 concluída
-2. Iniciar Fase 6: Adaptações e Migrações
-
-### Notas Técnicas
-- Interface intuitiva e responsiva
-- Componentes reutilizáveis e modulares
-- Validação de formulários no front-end
-- Integração completa com APIs criadas na Fase 4
-- Preview em tempo real do schema Zod
-- Suporte aos tipos principais de campos Zod
+2. ✅ Suporte completo a tipos complexos implementado
+3. Iniciar Fase 6: Adaptações e Migrações
 
 ---
 
