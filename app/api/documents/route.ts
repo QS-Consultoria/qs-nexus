@@ -27,12 +27,13 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(documentFiles.status, status as any))
     }
 
+    // Filtros usando campos JSONB do metadata
     if (area && area !== 'all') {
-      conditions.push(eq(templates.area, area as any))
+      conditions.push(sql`${templates.metadata}->>'area' = ${area}`)
     }
 
     if (docType && docType !== 'all') {
-      conditions.push(eq(templates.docType, docType as any))
+      conditions.push(sql`${templates.metadata}->>'docType' = ${docType}`)
     }
 
     if (search) {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       orderByClause = sortOrder === 'asc' ? asc(documentFiles.updatedAt) : desc(documentFiles.updatedAt)
     }
 
-    // Query base
+    // Query base - extrai campos do metadata JSONB
     let query = db
       .select({
         id: documentFiles.id,
@@ -69,8 +70,9 @@ export async function GET(request: NextRequest) {
         updatedAt: documentFiles.updatedAt,
         templateId: templates.id,
         templateTitle: templates.title,
-        templateArea: templates.area,
-        templateDocType: templates.docType,
+        // Extrai campos do metadata JSONB
+        templateArea: sql<string | null>`${templates.metadata}->>'area'`,
+        templateDocType: sql<string | null>`${templates.metadata}->>'docType'`,
       })
       .from(documentFiles)
       .leftJoin(templates, eq(documentFiles.id, templates.documentFileId))

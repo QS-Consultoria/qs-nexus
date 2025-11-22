@@ -51,6 +51,7 @@ export async function searchSimilarChunks(
   // Similaridade = 1 - (embedding <=> query_embedding)
   // Ordena por menor distância (maior similaridade)
   // Usa sql.unsafe para passar o vetor formatado corretamente
+  // Extrai campos do metadata JSONB
   const results = await sqlClient.unsafe(
     `
     SELECT 
@@ -62,8 +63,8 @@ export async function searchSimilarChunks(
       tc.chunk_index as "chunkIndex",
       1 - (tc.embedding <=> $1::vector) as similarity,
       t.title as "templateTitle",
-      t.doc_type as "templateDocType",
-      t.area as "templateArea"
+      t.metadata->>'docType' as "templateDocType",
+      t.metadata->>'area' as "templateArea"
     FROM template_chunks tc
     JOIN templates t ON t.id = tc.template_id
     WHERE tc.embedding IS NOT NULL
@@ -117,23 +118,24 @@ export async function searchSimilarChunksWithFilters(
   let whereConditions = 'tc.embedding IS NOT NULL'
   const params: any[] = [vectorString, minSimilarity]
 
+  // Filtros usando campos JSONB do metadata
   if (area) {
-    whereConditions += ` AND t.area = $${params.length + 1}`
+    whereConditions += ` AND t.metadata->>'area' = $${params.length + 1}`
     params.push(area)
   }
 
   if (docType) {
-    whereConditions += ` AND t.doc_type = $${params.length + 1}`
+    whereConditions += ` AND t.metadata->>'docType' = $${params.length + 1}`
     params.push(docType)
   }
 
   if (onlyGold) {
-    whereConditions += ' AND t.is_gold = true'
+    whereConditions += ` AND t.metadata->>'isGold' = 'true'`
   }
 
   params.push(limit)
 
-  // Executa query SQL raw
+  // Executa query SQL raw - usa campos JSONB do metadata
   const querySQL = `
     SELECT 
       tc.id,
@@ -144,8 +146,8 @@ export async function searchSimilarChunksWithFilters(
       tc.chunk_index as "chunkIndex",
       1 - (tc.embedding <=> $1::vector) as similarity,
       t.title as "templateTitle",
-      t.doc_type as "templateDocType",
-      t.area as "templateArea"
+      t.metadata->>'docType' as "templateDocType",
+      t.metadata->>'area' as "templateArea"
     FROM template_chunks tc
     JOIN templates t ON t.id = tc.template_id
     WHERE ${whereConditions}

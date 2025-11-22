@@ -47,22 +47,42 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     let templateResponse = template[0] || null
     if (!templateResponse && markdownFromTemp) {
       // Cria um template temporário com valores padrão válidos para arquivos rejeitados
+      // Usa estrutura com metadata JSONB
       templateResponse = {
         id: 'temp-' + fileId,
         documentFileId: fileId,
         title: file[0].fileName,
-        docType: 'outro' as const,
-        area: 'outro' as const,
-        jurisdiction: 'BR',
-        complexity: 'medio' as const,
-        tags: [],
-        summary: 'Arquivo rejeitado - markdown disponível para visualização',
         markdown: markdownFromTemp,
-        qualityScore: null,
-        isGold: false,
-        isSilver: false,
+        metadata: {
+          docType: 'outro',
+          area: 'outro',
+          jurisdiction: 'BR',
+          complexity: 'medio',
+          tags: [],
+          summary: 'Arquivo rejeitado - markdown disponível para visualização',
+          qualityScore: null,
+          isGold: false,
+          isSilver: false,
+        },
+        schemaConfigId: null,
         createdAt: file[0].createdAt,
         updatedAt: file[0].updatedAt,
+      } as any
+    } else if (templateResponse) {
+      // Extrai campos do metadata JSONB para compatibilidade com front-end existente
+      const metadata = templateResponse.metadata as any || {}
+      templateResponse = {
+        ...templateResponse,
+        // Campos legados extraídos do metadata para compatibilidade
+        docType: metadata.docType || null,
+        area: metadata.area || null,
+        jurisdiction: metadata.jurisdiction || 'BR',
+        complexity: metadata.complexity || null,
+        tags: metadata.tags || [],
+        summary: metadata.summary || null,
+        qualityScore: metadata.qualityScore || null,
+        isGold: metadata.isGold || false,
+        isSilver: metadata.isSilver || false,
       } as any
     }
 

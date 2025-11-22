@@ -28,16 +28,29 @@ interface FileDetails {
 interface Template {
   id: string
   title: string
-  docType: string
-  area: string
-  jurisdiction: string
-  complexity: string
-  tags: string[]
-  summary: string
   markdown: string
-  qualityScore: string | null
-  isGold: boolean
-  isSilver: boolean
+  metadata?: {
+    docType?: string
+    area?: string
+    jurisdiction?: string
+    complexity?: string
+    tags?: string[]
+    summary?: string
+    qualityScore?: number | null
+    isGold?: boolean
+    isSilver?: boolean
+    [key: string]: any // Permite campos dinâmicos adicionais
+  }
+  // Campos legados para compatibilidade (extraídos do metadata)
+  docType?: string
+  area?: string
+  jurisdiction?: string
+  complexity?: string
+  tags?: string[]
+  summary?: string
+  qualityScore?: number | null
+  isGold?: boolean
+  isSilver?: boolean
 }
 
 interface Chunk {
@@ -582,46 +595,104 @@ export default function FileDetailsPage() {
                 <p className="text-sm font-medium text-muted-foreground">Título</p>
                 <p className="text-sm">{template.title}</p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Tipo</p>
-                <p className="text-sm">{template.docType}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Área</p>
-                <p className="text-sm">{template.area}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Complexidade</p>
-                <p className="text-sm">{template.complexity}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Qualidade</p>
-                <div className="flex gap-2">
-                  {template.isGold && <Badge className="bg-yellow-500">GOLD</Badge>}
-                  {template.isSilver && <Badge className="bg-gray-400">SILVER</Badge>}
-                  {template.qualityScore && (
-                    <Badge variant="outline">{template.qualityScore}</Badge>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Resumo</p>
-                <p className="text-sm">{template.summary}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Tags</p>
-                {template.tags && template.tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {template.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhuma tag</p>
-                )}
-              </div>
+              {/* Extrai campos do metadata ou usa campos legados para compatibilidade */}
+              {(() => {
+                const metadata = template.metadata || {}
+                const docType = template.docType || metadata.docType
+                const area = template.area || metadata.area
+                const complexity = template.complexity || metadata.complexity
+                const jurisdiction = template.jurisdiction || metadata.jurisdiction || 'BR'
+                const tags = template.tags || metadata.tags || []
+                const summary = template.summary || metadata.summary
+                const qualityScore = template.qualityScore ?? metadata.qualityScore ?? null
+                const isGold = template.isGold ?? metadata.isGold ?? false
+                const isSilver = template.isSilver ?? metadata.isSilver ?? false
+
+                return (
+                  <>
+                    {docType && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Tipo</p>
+                        <p className="text-sm">{docType}</p>
+                      </div>
+                    )}
+                    {area && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Área</p>
+                        <p className="text-sm">{area}</p>
+                      </div>
+                    )}
+                    {complexity && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Complexidade</p>
+                        <p className="text-sm">{complexity}</p>
+                      </div>
+                    )}
+                    {jurisdiction && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Jurisdição</p>
+                        <p className="text-sm">{jurisdiction}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Qualidade</p>
+                      <div className="flex gap-2">
+                        {isGold && <Badge className="bg-yellow-500">GOLD</Badge>}
+                        {isSilver && <Badge className="bg-gray-400">SILVER</Badge>}
+                        {qualityScore !== null && qualityScore !== undefined && (
+                          <Badge variant="outline">{qualityScore}</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {summary && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Resumo</p>
+                        <p className="text-sm">{summary}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Tags</p>
+                      {tags && tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {tags.map((tag, index) => (
+                            <Badge key={index} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhuma tag</p>
+                      )}
+                    </div>
+                    {/* Exibe outros campos dinâmicos do metadata */}
+                    {template.metadata && Object.keys(template.metadata).length > 0 && (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          Outros Campos
+                        </p>
+                        <div className="space-y-2">
+                          {Object.entries(template.metadata)
+                            .filter(([key]) => 
+                              !['docType', 'area', 'jurisdiction', 'complexity', 'tags', 'summary', 'qualityScore', 'isGold', 'isSilver'].includes(key)
+                            )
+                            .map(([key, value]) => (
+                              <div key={key}>
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  {key}:
+                                </p>
+                                <p className="text-xs">
+                                  {typeof value === 'object' 
+                                    ? JSON.stringify(value, null, 2)
+                                    : String(value)}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </CardContent>
           </Card>
         )}

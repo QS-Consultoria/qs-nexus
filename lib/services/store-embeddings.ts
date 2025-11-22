@@ -1,36 +1,65 @@
 import { db } from '../db/index'
-import { templates, templateChunks } from '../db/schema/rag'
-import { TemplateDocument } from '../types/template-document'
+import { templates, templateChunks, templateSchemaConfigs } from '../db/schema/rag'
+import { TemplateDocument, toDynamicTemplateDocument } from '../types/template-document'
 import { Chunk } from './chunker'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
+import { loadTemplateSchemaConfig } from './template-schema-service'
 
 export interface ChunkWithEmbedding extends Chunk {
   embedding: number[]
 }
 
 /**
- * Armazena template no banco
+ * Armazena template no banco usando metadata JSONB
  */
 export async function storeTemplate(
   template: TemplateDocument,
   documentFileId: string
 ): Promise<string> {
+  // Busca schema config ativo (ou cria um padrão se não existir)
+  let schemaConfigId: string | undefined
+  try {
+    const schemaConfig = await loadTemplateSchemaConfig()
+    schemaConfigId = schemaConfig.id
+  } catch (error) {
+    // Se não houver schema ativo, tenta buscar o primeiro disponível
+    console.warn('Nenhum schema ativo encontrado, tentando buscar primeiro disponível:', error)
+    const schemas = await db
+      .select()
+      .from(templateSchemaConfigs)
+      .limit(1)
+    
+    if (schemas.length > 0) {
+      schemaConfigId = schemas[0].id
+    }
+  }
+
+  // Converte para formato dinâmico com metadata JSONB
+  const dynamicTemplate = toDynamicTemplateDocument(template, schemaConfigId)
+
+  // Extrai campos para metadata JSONB
+  const metadata = {
+    docType: dynamicTemplate.docType,
+    area: dynamicTemplate.area,
+    jurisdiction: dynamicTemplate.jurisdiction || 'BR',
+    complexity: dynamicTemplate.complexity,
+    tags: dynamicTemplate.tags || [],
+    summary: dynamicTemplate.summary,
+    qualityScore: dynamicTemplate.qualityScore ?? null,
+    isGold: dynamicTemplate.isGold || false,
+    isSilver: dynamicTemplate.isSilver || false,
+    // Preserva outros campos do metadata se houver
+    ...(dynamicTemplate.metadata || {}),
+  }
+
   const [inserted] = await db
     .insert(templates)
     .values({
       documentFileId,
       title: template.title,
-      docType: template.docType,
-      area: template.area,
-      jurisdiction: template.jurisdiction,
-      complexity: template.complexity,
-      tags: template.tags,
-      summary: template.summary,
       markdown: template.markdown,
-      metadata: template.metadata,
-      qualityScore: template.qualityScore?.toString(),
-      isGold: template.isGold,
-      isSilver: template.isSilver,
+      metadata: metadata as any,
+      schemaConfigId: schemaConfigId || null,
     })
     .returning()
 
