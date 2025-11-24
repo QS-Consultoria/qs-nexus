@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Plus, Trash2, X, AlertCircle } from 'lucide-react'
 
 interface SchemaFieldEditorProps {
@@ -99,58 +100,80 @@ export function SchemaFieldEditor({ field, onChange, onDelete }: SchemaFieldEdit
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="field-name">Nome do Campo</Label>
-          <Input
-            id="field-name"
-            value={localField.name}
-            onChange={e => updateField({ name: e.target.value })}
-            placeholder="ex: docType"
-            required
-          />
-        </div>
+        <Accordion type="multiple" defaultValue={['basic']} className="w-full">
+          {/* Informações Básicas */}
+          <AccordionItem value="basic">
+            <AccordionTrigger>Informações Básicas</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="field-name">Nome do Campo</Label>
+                <Input
+                  id="field-name"
+                  value={localField.name}
+                  onChange={e => updateField({ name: e.target.value })}
+                  placeholder="ex: docType"
+                  required
+                />
+              </div>
 
-        <FieldTypeSelector
-          value={localField.type}
-          onChange={type => {
-            // Reset field-specific properties when type changes
-            let baseField: FieldDefinition = {
-              name: localField.name,
-              type,
-              description: localField.description,
-              required: localField.required,
-              defaultValue: localField.defaultValue,
-            }
+              <div className="space-y-2">
+                <Label htmlFor="field-type">Tipo do Campo</Label>
+                <FieldTypeSelector
+                  value={localField.type}
+                  onChange={type => {
+                    // Reset field-specific properties when type changes
+                    let baseField: FieldDefinition = {
+                      name: localField.name,
+                      type,
+                      description: localField.description,
+                      required: localField.required,
+                      defaultValue: localField.defaultValue,
+                    }
 
-            // Initialize type-specific properties
-            if (type === 'enum') {
-              baseField = { ...baseField, type: 'enum', enumValues: [] } as EnumFieldDefinition
-            } else if (type === 'literal') {
-              baseField = { ...baseField, type: 'literal', literalValue: '' } as LiteralFieldDefinition
-            } else if (type === 'number') {
-              baseField = { ...baseField, type: 'number' } as NumberFieldDefinition
-            } else if (type === 'array') {
-              baseField = { ...baseField, type: 'array', itemType: 'string' } as ArrayFieldDefinition
-            } else if (type === 'object') {
-              baseField = { ...baseField, type: 'object', objectFields: [] } as ObjectFieldDefinition
-            } else if (type === 'union') {
-              baseField = { ...baseField, type: 'union', unionTypes: [] } as UnionFieldDefinition
-            }
+                    // Initialize type-specific properties
+                    if (type === 'enum') {
+                      baseField = { ...baseField, type: 'enum', enumValues: [] } as EnumFieldDefinition
+                    } else if (type === 'literal') {
+                      baseField = { ...baseField, type: 'literal', literalValue: '' } as LiteralFieldDefinition
+                    } else if (type === 'number') {
+                      baseField = { ...baseField, type: 'number' } as NumberFieldDefinition
+                    } else if (type === 'array') {
+                      baseField = { ...baseField, type: 'array', itemType: 'string' } as ArrayFieldDefinition
+                    } else if (type === 'object') {
+                      baseField = { ...baseField, type: 'object', objectFields: [] } as ObjectFieldDefinition
+                    } else if (type === 'union') {
+                      baseField = { ...baseField, type: 'union', unionTypes: [] } as UnionFieldDefinition
+                    }
 
-            updateField(baseField)
-          }}
-        />
+                    updateField(baseField)
+                  }}
+                />
+              </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="field-description">Descrição (opcional)</Label>
-          <Textarea
-            id="field-description"
-            value={localField.description || ''}
-            onChange={e => updateField({ description: e.target.value || undefined })}
-            placeholder="Descrição do campo para documentação"
-            rows={2}
-          />
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="field-description">Descrição (opcional)</Label>
+                <Textarea
+                  id="field-description"
+                  value={localField.description || ''}
+                  onChange={e => updateField({ description: e.target.value || undefined })}
+                  placeholder="Descrição do campo para documentação"
+                  rows={2}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Configurações Específicas do Tipo */}
+          <AccordionItem value="type-specific">
+            <AccordionTrigger>
+              Configurações Específicas do Tipo
+              {localField.type !== 'string' && localField.type !== 'boolean' && localField.type !== 'date' && localField.type !== 'bigint' && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {localField.type}
+                </Badge>
+              )}
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4">
 
         {/* Configurações específicas por tipo */}
         {isNumberField(localField) && (
@@ -508,40 +531,49 @@ export function SchemaFieldEditor({ field, onChange, onDelete }: SchemaFieldEdit
             )}
           </div>
         )}
+            </AccordionContent>
+          </AccordionItem>
 
-        <div className="space-y-2">
-          <Label htmlFor="field-default">Valor Padrão (opcional)</Label>
-          <Input
-            id="field-default"
-            value={localField.defaultValue !== undefined ? String(localField.defaultValue) : ''}
-            onChange={e => {
-              let value: any = e.target.value
-              if (value === '') {
-                updateField({ ...localField, defaultValue: undefined })
-                return
-              }
-              // Tenta converter baseado no tipo
-              if (localField.type === 'number') {
-                value = parseFloat(value)
-              } else if (localField.type === 'boolean') {
-                value = value === 'true'
-              }
-              updateField({ ...localField, defaultValue: value })
-            }}
-            placeholder="Valor padrão do campo"
-          />
-        </div>
+          {/* Configurações Avançadas */}
+          <AccordionItem value="advanced">
+            <AccordionTrigger>Configurações Avançadas</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="field-default">Valor Padrão (opcional)</Label>
+                <Input
+                  id="field-default"
+                  value={localField.defaultValue !== undefined ? String(localField.defaultValue) : ''}
+                  onChange={e => {
+                    let value: any = e.target.value
+                    if (value === '') {
+                      updateField({ ...localField, defaultValue: undefined })
+                      return
+                    }
+                    // Tenta converter baseado no tipo
+                    if (localField.type === 'number') {
+                      value = parseFloat(value)
+                    } else if (localField.type === 'boolean') {
+                      value = value === 'true'
+                    }
+                    updateField({ ...localField, defaultValue: value })
+                  }}
+                  placeholder="Valor padrão do campo"
+                />
+              </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="field-required"
-            checked={localField.required !== false}
-            onCheckedChange={checked => updateField({ ...localField, required: checked === true })}
-          />
-          <Label htmlFor="field-required" className="cursor-pointer">
-            Campo obrigatório
-          </Label>
-        </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="field-required"
+                  checked={localField.required !== false}
+                  onCheckedChange={checked => updateField({ ...localField, required: checked === true })}
+                />
+                <Label htmlFor="field-required" className="cursor-pointer">
+                  Campo obrigatório
+                </Label>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </CardContent>
     </Card>
   )

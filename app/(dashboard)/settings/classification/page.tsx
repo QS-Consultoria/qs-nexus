@@ -4,15 +4,17 @@ import { useState, useEffect } from 'react'
 import { SettingsLayout } from '@/components/settings/settings-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
-import { ModelSelector } from '@/components/settings/model-selector'
-import { CodeEditor } from '@/components/settings/code-editor'
-import { SchemaPromptPreview } from '@/components/settings/schema-prompt-preview'
+import { Badge } from '@/components/ui/badge'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { ClassificationForm } from '@/components/settings/classification-form'
 import { toast } from 'react-hot-toast'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
+import { Plus, Trash2, Edit2, FileCode, Zap, Settings2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,57 +40,13 @@ interface ClassificationConfig {
   updatedAt: string
 }
 
-const DEFAULT_EXTRACTION_FUNCTION = `function extractContent(markdown) {
-  const lines = markdown.split('\\n');
-  const extracted = [];
-  
-  // Primeiras 3000 caracteres
-  let headerContent = '';
-  let charCount = 0;
-  for (let i = 0; i < lines.length && charCount < 3000; i++) {
-    const line = lines[i];
-    charCount += line.length + 1;
-    headerContent += line + '\\n';
-  }
-  extracted.push(headerContent.trim());
-  
-  // Estrutura de seções
-  const sectionHeaders = [];
-  for (const line of lines) {
-    if (line.trim().match(/^#{1,3}\\s+/)) {
-      sectionHeaders.push(line.trim());
-    }
-  }
-  extracted.push('\\n## Estrutura:\\n' + sectionHeaders.join('\\n'));
-  
-  // Últimas 3000 caracteres
-  let footerContent = '';
-  charCount = 0;
-  for (let i = lines.length - 1; i >= 0 && charCount < 3000; i--) {
-    const line = lines[i];
-    charCount += line.length + 1;
-    footerContent = line + '\\n' + footerContent;
-  }
-  extracted.push(footerContent.trim());
-  
-  return extracted.join('\\n\\n---\\n\\n');
-}`
-
 export default function ClassificationSettingsPage() {
   const [configs, setConfigs] = useState<ClassificationConfig[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [editingConfig, setEditingConfig] = useState<ClassificationConfig | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    systemPrompt: '',
-    modelProvider: 'openai' as 'openai' | 'google',
-    modelName: 'gpt-4o-mini',
-    maxInputTokens: 128000,
-    maxOutputTokens: 16384,
-    extractionFunctionCode: '',
-    isActive: false,
-  })
 
   useEffect(() => {
     fetchConfigs()
@@ -109,13 +67,37 @@ export default function ClassificationSettingsPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function handleNew() {
+    setEditingConfig(null)
+    setIsDrawerOpen(true)
+  }
+
+  function handleEdit(config: ClassificationConfig) {
+    setEditingConfig(config)
+    setIsDrawerOpen(true)
+  }
+
+  function handleCloseDrawer() {
+    setIsDrawerOpen(false)
+    setEditingConfig(null)
+  }
+
+  async function handleSubmit(formData: {
+    name: string
+    systemPrompt: string
+    modelProvider: 'openai' | 'google'
+    modelName: string
+    maxInputTokens: number
+    maxOutputTokens: number
+    extractionFunctionCode?: string
+    isActive: boolean
+  }) {
     try {
-      const url = editingId
-        ? `/api/classification/configs/${editingId}`
+      setIsSubmitting(true)
+      const url = editingConfig
+        ? `/api/classification/configs/${editingConfig.id}`
         : '/api/classification/configs'
-      const method = editingId ? 'PUT' : 'POST'
+      const method = editingConfig ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
         method,
@@ -128,42 +110,15 @@ export default function ClassificationSettingsPage() {
         throw new Error(error.error || 'Erro ao salvar configuração')
       }
 
-      toast.success(editingId ? 'Configuração atualizada' : 'Configuração criada')
-      resetForm()
+      toast.success(editingConfig ? 'Configuração atualizada' : 'Configuração criada')
+      handleCloseDrawer()
       fetchConfigs()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao salvar')
       console.error(error)
+    } finally {
+      setIsSubmitting(false)
     }
-  }
-
-  function resetForm() {
-    setEditingId(null)
-    setFormData({
-      name: '',
-      systemPrompt: '',
-      modelProvider: 'openai',
-      modelName: 'gpt-4o-mini',
-      maxInputTokens: 128000,
-      maxOutputTokens: 16384,
-      extractionFunctionCode: '',
-      isActive: false,
-    })
-  }
-
-  function handleEdit(config: ClassificationConfig) {
-    setEditingId(config.id)
-    setFormData({
-      name: config.name,
-      systemPrompt: config.systemPrompt,
-      modelProvider: config.modelProvider,
-      modelName: config.modelName,
-      maxInputTokens: config.maxInputTokens,
-      maxOutputTokens: config.maxOutputTokens,
-      extractionFunctionCode: config.extractionFunctionCode || '',
-      isActive: config.isActive,
-    })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleDelete(id: string) {
@@ -186,143 +141,18 @@ export default function ClassificationSettingsPage() {
   return (
     <SettingsLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Configurações de Classificação</h2>
-          <p className="text-muted-foreground">
-            Gerencie modelos de IA, prompts e funções de extração para classificação de documentos
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Configurações de Classificação</h2>
+            <p className="text-muted-foreground">
+              Gerencie modelos de IA, prompts e funções de extração para classificação de documentos
+            </p>
+          </div>
+          <Button onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Configuração
+          </Button>
         </div>
-
-        {/* Formulário */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingId ? 'Editar Configuração' : 'Nova Configuração'}</CardTitle>
-            <CardDescription>
-              {editingId
-                ? 'Atualize os campos abaixo e salve as alterações'
-                : 'Crie uma nova configuração de classificação'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome da Configuração</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Classificação Padrão"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="systemPrompt">System Prompt</Label>
-                <Textarea
-                  id="systemPrompt"
-                  value={formData.systemPrompt}
-                  onChange={e => setFormData({ ...formData, systemPrompt: e.target.value })}
-                  placeholder="Instruções para o modelo de IA..."
-                  rows={8}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  O prompt do schema será automaticamente adicionado ao final deste prompt durante a classificação.
-                </p>
-              </div>
-
-              <SchemaPromptPreview />
-
-              <ModelSelector
-                provider={formData.modelProvider}
-                modelName={formData.modelName}
-                onProviderChange={provider => {
-                  setFormData({
-                    ...formData,
-                    modelProvider: provider,
-                    modelName: provider === 'openai' ? 'gpt-4o-mini' : 'gemini-2.5-flash',
-                  })
-                }}
-                onModelChange={modelName => setFormData({ ...formData, modelName })}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maxInputTokens">Max Input Tokens</Label>
-                  <Input
-                    id="maxInputTokens"
-                    type="number"
-                    value={formData.maxInputTokens}
-                    onChange={e =>
-                      setFormData({ ...formData, maxInputTokens: parseInt(e.target.value) })
-                    }
-                    required
-                    min={1}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxOutputTokens">Max Output Tokens</Label>
-                  <Input
-                    id="maxOutputTokens"
-                    type="number"
-                    value={formData.maxOutputTokens}
-                    onChange={e =>
-                      setFormData({ ...formData, maxOutputTokens: parseInt(e.target.value) })
-                    }
-                    required
-                    min={1}
-                  />
-                </div>
-              </div>
-
-              <CodeEditor
-                label="Função de Extração (JavaScript)"
-                value={formData.extractionFunctionCode}
-                onChange={value => setFormData({ ...formData, extractionFunctionCode: value })}
-                placeholder="function extractContent(markdown) { ... }"
-                description="Função JavaScript customizada para extrair conteúdo relevante. Deixe vazio para usar a função padrão."
-                defaultCode={DEFAULT_EXTRACTION_FUNCTION}
-                showDefault={true}
-                rows={10}
-              />
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={checked =>
-                    setFormData({ ...formData, isActive: checked === true })
-                  }
-                />
-                <Label htmlFor="isActive" className="cursor-pointer">
-                  Marcar como configuração ativa
-                </Label>
-              </div>
-
-              <div className="flex gap-2">
-                <Button type="submit">
-                  {editingId ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Salvar Alterações
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Configuração
-                    </>
-                  )}
-                </Button>
-                {editingId && (
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
 
         {/* Lista de Configurações */}
         <Card>
@@ -338,55 +168,116 @@ export default function ClassificationSettingsPage() {
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Carregando...</div>
             ) : configs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma configuração criada ainda
+              <div className="text-center py-12">
+                <FileCode className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">Nenhuma configuração criada ainda</p>
+                <Button variant="outline" onClick={handleNew}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeira Configuração
+                </Button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 {configs.map(config => (
-                  <div
+                  <Card
                     key={config.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleEdit(config)}
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{config.name}</h3>
-                        {config.isActive && (
-                          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
-                            Ativa
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CardTitle className="text-lg">{config.name}</CardTitle>
+                            {config.isActive && (
+                              <Badge className="bg-primary text-primary-foreground">
+                                <Zap className="h-3 w-3 mr-1" />
+                                Ativa
+                              </Badge>
+                            )}
+                          </div>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <Settings2 className="h-4 w-4" />
+                            {config.modelProvider === 'openai' ? 'OpenAI' : 'Google'} /{' '}
+                            {config.modelName}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Input Tokens:</span>
+                          <span className="font-medium">{config.maxInputTokens.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Output Tokens:</span>
+                          <span className="font-medium">
+                            {config.maxOutputTokens.toLocaleString()}
                           </span>
+                        </div>
+                        {config.extractionFunctionCode && (
+                          <div className="pt-2 border-t">
+                            <span className="text-xs text-muted-foreground">
+                              Função customizada configurada
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {config.modelProvider} / {config.modelName}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Tokens: {config.maxInputTokens.toLocaleString()} input /{' '}
-                        {config.maxOutputTokens.toLocaleString()} output
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(config)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowDeleteDialog(config.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                      <div className="flex gap-2 mt-4 pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={e => {
+                            e.stopPropagation()
+                            handleEdit(config)
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={e => {
+                            e.stopPropagation()
+                            setShowDeleteDialog(config.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Drawer para Criar/Editar */}
+        <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>
+                {editingConfig ? 'Editar Configuração' : 'Nova Configuração'}
+              </SheetTitle>
+              <SheetDescription>
+                {editingConfig
+                  ? 'Atualize os campos abaixo e salve as alterações'
+                  : 'Crie uma nova configuração de classificação'}
+              </SheetDescription>
+            </SheetHeader>
+            <ClassificationForm
+              config={editingConfig || undefined}
+              onSubmit={handleSubmit}
+              onCancel={handleCloseDrawer}
+              isLoading={isSubmitting}
+            />
+          </SheetContent>
+        </Sheet>
 
         {/* Dialog de Confirmação de Delete */}
         <AlertDialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
@@ -412,4 +303,3 @@ export default function ClassificationSettingsPage() {
     </SettingsLayout>
   )
 }
-
