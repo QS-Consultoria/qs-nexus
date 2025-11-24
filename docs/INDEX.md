@@ -10,6 +10,8 @@ docs/
 ├── README.md                   # Visão geral do sistema
 │
 ├── CHANGELOG-2025-11-21.md    # Changelog completo das mudanças de 21/11/2025
+├── CHANGELOG-2025-11-22.md    # Changelog completo das mudanças de 22/11/2025
+├── CHANGELOG-2025-11-23.md    # Changelog completo das mudanças de 23/11/2025
 │
 ├── setup/                      # Configuração e Setup
 │   ├── SETUP.md               # Guia completo de configuração
@@ -292,6 +294,19 @@ Referência de APIs de Classificação e Schema:
 3. **Workers**: Consulte [worker-threads.md](./reference/worker-threads.md)
 
 ## Últimas Implementações
+
+### Implementação do Tema Amber Minima (2025-11-23)
+
+- ✅ **Novo Tema Amber Minima**: Tema inspirado no 21st Magic com design minimalista
+- ✅ **Cor Primária Âmbar**: Cor vibrante (#f59e0b) substituindo o verde-azulado anterior
+- ✅ **Design Minimalista**: Visual limpo com border radius reduzido (0.375rem)
+- ✅ **Paleta Harmoniosa**: Tons de âmbar consistentes em toda a interface
+- ✅ **Modo Escuro Refinado**: Background preto profundo (#171717) com excelente contraste
+- ✅ **Cores de Gráficos**: Suporte completo para paleta de gráficos baseada em âmbar
+- ✅ **Transições Suaves**: Animações fluidas e naturais mantidas
+- ✅ **Scrollbar Personalizada**: Estilo moderno com suporte a tema claro/escuro
+
+Ver [CHANGELOG-2025-11-23.md](./CHANGELOG-2025-11-23.md) para detalhes completos.
 
 ### Tracking de Modelos, Tokens e Custos (2025-11-22)
 

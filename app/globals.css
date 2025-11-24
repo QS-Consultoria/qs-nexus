@@ -2,78 +2,95 @@
 
 @layer base {
   :root {
-    /* LegalWise Color Palette - Refinada */
-    /* Background: Branco puro para visual profissional */
+    /* Amber Minima Theme - Inspirado no 21st Magic */
+    /* Background: Branco puro minimalista */
     --background: 0 0% 100%;
-    /* Foreground: texto escuro para contraste */
-    --foreground: 222.2 84% 4.9%;
-    /* Card: Branco puro com sombras sutis */
+    /* Foreground: Cinza escuro para excelente contraste */
+    --foreground: 0 0% 15%;
+    /* Card: Branco puro */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    /* Primary: Verde-azulado LegalWise mais escuro e sofisticado (#1F6B5F) */
-    --primary: 172 55% 28%;
-    --primary-foreground: 0 0% 100%;
-    /* Secondary: Tom complementar mais sutil */
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    /* Muted: Cinza neutro suave para textos secundários */
-    --muted: 220 9% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    /* Accent: Variação mais discreta da cor primária */
-    --accent: 172 40% 92%;
-    --accent-foreground: 172 55% 28%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 0 0% 15%;
+    /* Primary: Amber vibrante (#f59e0b) */
+    --primary: 38 96% 50%;
+    --primary-foreground: 0 0% 0%;
+    /* Secondary: Cinza claro neutro */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 13% 34%;
+    /* Muted: Cinza muito claro */
+    --muted: 210 20% 98%;
+    --muted-foreground: 215 16% 47%;
+    /* Accent: Amber muito claro (#fffbeb) */
+    --accent: 48 100% 97%;
+    --accent-foreground: 30 82% 31%;
+    /* Destructive: Vermelho */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    /* Border: Cinza neutro claro (#E5E7EB) */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 172 55% 28%;
-    --radius: 0.5rem;
+    /* Border: Cinza neutro */
+    --border: 210 20% 91%;
+    --input: 210 20% 91%;
+    --ring: 38 96% 50%;
+    --radius: 0.375rem;
     
-    /* Sidebar: Branco com borda sutil */
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 172 55% 28%;
+    /* Sidebar: Cinza muito claro */
+    --sidebar: 210 20% 98%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 38 96% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 9% 96%;
-    --sidebar-accent-foreground: 222.2 84% 4.9%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 172 55% 28%;
+    --sidebar-accent: 48 100% 97%;
+    --sidebar-accent-foreground: 30 82% 31%;
+    --sidebar-border: 210 20% 91%;
+    --sidebar-ring: 38 96% 50%;
+    
+    /* Chart colors - Amber palette */
+    --chart-1: 38 96% 50%;
+    --chart-2: 30 96% 45%;
+    --chart-3: 30 82% 31%;
+    --chart-4: 30 82% 31%;
+    --chart-5: 30 70% 25%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    /* Primary: Mantém cor verde-azulada visível no dark mode (não quase branco) */
-    --primary: 172 55% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    /* Destructive: Vermelho mais claro no dark mode para melhor visibilidade */
-    --destructive: 0 72% 51%;
+    /* Dark Mode: Amber Minima Theme */
+    --background: 0 0% 9%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 90%;
+    /* Primary: Amber vibrante mantido */
+    --primary: 38 96% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 64%;
+    /* Accent: Amber escuro no dark */
+    --accent: 30 82% 31%;
+    --accent-foreground: 48 96% 77%;
+    /* Destructive: Vermelho */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 38 96% 50%;
     
-    --sidebar: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar: 0 0% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 38 96% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 30 82% 31%;
+    --sidebar-accent-foreground: 48 96% 77%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 38 96% 50%;
+    
+    /* Chart colors - Amber palette (dark) */
+    --chart-1: 48 96% 77%;
+    --chart-2: 30 96% 45%;
+    --chart-3: 30 82% 31%;
+    --chart-4: 30 82% 31%;
+    --chart-5: 30 82% 31%;
   }
 
   * {
@@ -84,6 +101,70 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Forçar cores primárias para garantir que funcionem */
+  .bg-primary {
+    background-color: hsl(var(--primary)) !important;
+  }
+  
+  .text-primary {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  .text-primary-foreground {
+    color: hsl(var(--primary-foreground)) !important;
+  }
+  
+  .border-primary {
+    border-color: hsl(var(--primary)) !important;
+  }
+  
+  .ring-primary {
+    --tw-ring-color: hsl(var(--primary)) !important;
+  }
+
+  /* Melhorias visuais para cards */
+  [class*="card"] {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sombras refinadas */
+  .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-md {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  /* Scrollbar personalizada */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
