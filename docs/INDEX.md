@@ -32,7 +32,8 @@ docs/
 │   ├── troubleshooting.md    # Guia de troubleshooting e scripts utilitários
 │   ├── dashboard.md           # Guia de uso do Dashboard
 │   ├── gemini-integration.md  # Guia de integração com Google Gemini
-│   └── model-tracking.md      # Guia de tracking de modelos e tokens
+│   ├── model-tracking.md      # Guia de tracking de modelos e tokens
+│   └── tailwind-v4-css-variables.md  # Guia sobre problema do Tailwind v4 com variáveis CSS
 │
 └── reference/                  # Referência Técnica
     ├── concurrency-pool.md    # Documentação do ConcurrencyPool
