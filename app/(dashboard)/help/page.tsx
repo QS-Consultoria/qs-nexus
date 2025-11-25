@@ -323,6 +323,7 @@ export default function HelpPage() {
                     <Badge variant="secondary">.docx</Badge>
                     <Badge variant="secondary">.doc</Badge>
                     <Badge variant="secondary">.pdf</Badge>
+                    <Badge variant="secondary">.txt</Badge>
                   </div>
                 </div>
                 <div>
@@ -546,6 +547,7 @@ export default function HelpPage() {
                   <Badge variant="secondary">.docx</Badge>
                   <Badge variant="secondary">.doc</Badge>
                   <Badge variant="secondary">.pdf</Badge>
+                  <Badge variant="secondary">.txt</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   <strong>Limite:</strong> Máximo de 50MB por arquivo.
@@ -560,7 +562,7 @@ export default function HelpPage() {
                   Verifique se o arquivo atende aos critérios:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Formato é .docx, .doc ou .pdf</li>
+                  <li>Formato é .docx, .doc, .pdf ou .txt</li>
                   <li>Tamanho é menor que 50MB</li>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-2">

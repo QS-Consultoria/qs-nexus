@@ -1,6 +1,5 @@
-import { Worker } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
-import { join, resolve, dirname } from 'node:path'
+import { dirname } from 'node:path'
 import {
   calculateFileHash,
   normalizeFilePath,
@@ -20,15 +19,15 @@ import { storeTemplate, storeChunks } from './store-embeddings'
 import { db } from '../db/index'
 import { documentFiles } from '../db/schema/rag'
 import { eq } from 'drizzle-orm'
+import { convertDocument } from './document-converter'
 
 const PROJECT_ROOT = process.cwd()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const WORKER_PATH = join(__dirname, '../workers/document-converter-worker.ts')
 
 // Limites de configuração
 const MIN_WORDS = parseInt(process.env.MIN_WORDS || '300', 10)
-const MAX_WORDS = parseInt(process.env.MAX_WORDS || '25000', 10)
+const MAX_WORDS = parseInt(process.env.MAX_WORDS || '1000000', 10)
 const MAX_TOKENS = parseInt(process.env.CHUNK_MAX_TOKENS || '800', 10)
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '64', 10)
 
@@ -44,54 +43,6 @@ export interface ProcessingProgress {
 }
 
 export type ProgressCallback = (progress: ProcessingProgress) => void
-
-/**
- * Converte documento para Markdown usando Worker Thread
- * Suporta: .docx, .doc, .pdf
- */
-function convertDocumentWithWorker(filePath: string): Promise<{ markdown: string; wordCount: number }> {
-  return new Promise((resolve, reject) => {
-    const taskId = `${Date.now()}-${Math.random()}`
-
-    try {
-      const execArgv = process.execArgv.length > 0 ? process.execArgv : ['--import', 'tsx/esm']
-      const worker = new Worker(WORKER_PATH, { execArgv })
-
-      const timeout = setTimeout(() => {
-        worker.terminate()
-        reject(new Error('Worker timeout após 60s'))
-      }, 60000)
-
-      worker.on(
-        'message',
-        (message: { taskId: string; success: boolean; result?: any; error?: string }) => {
-          if (message.taskId !== taskId) {
-            return
-          }
-
-          clearTimeout(timeout)
-          worker.terminate()
-
-          if (message.success && message.result) {
-            resolve(message.result)
-          } else {
-            reject(new Error(message.error || 'Unknown error'))
-          }
-        }
-      )
-
-      worker.on('error', error => {
-        clearTimeout(timeout)
-        worker.terminate()
-        reject(error)
-      })
-
-      worker.postMessage({ filePath, taskId })
-    } catch (error) {
-      reject(error)
-    }
-  })
-}
 
 /**
  * Processa um arquivo completo através do pipeline RAG
@@ -142,7 +93,7 @@ export async function processFile(
       return { success: false, error: errorMsg }
     }
 
-    const { markdown, wordCount } = await convertDocumentWithWorker(filePath)
+    const { markdown, wordCount } = await convertDocument(filePath)
     const cleanedMarkdown = cleanMarkdown(markdown)
 
     // Salva markdown temporário

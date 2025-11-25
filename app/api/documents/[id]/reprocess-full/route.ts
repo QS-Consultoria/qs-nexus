@@ -46,9 +46,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 })
     }
 
-    // Validar formato (.doc, .docx, .pdf)
+    // Validar formato (.doc, .docx, .pdf, .txt)
     const fileName = uploadedFile.name.toLowerCase()
-    const isValidFormat = fileName.endsWith('.docx') || fileName.endsWith('.doc') || fileName.endsWith('.pdf')
+    const isValidFormat = fileName.endsWith('.docx') || fileName.endsWith('.doc') || fileName.endsWith('.pdf') || fileName.endsWith('.txt')
     if (!isValidFormat) {
       return NextResponse.json(
         { error: 'Apenas arquivos DOCX, DOC ou PDF são permitidos' },

@@ -21,9 +21,9 @@ export async function POST(request: Request) {
     const uploadedFiles = []
 
     for (const file of files) {
-      // Validar formato (.doc, .docx, .pdf)
+      // Validar formato (.doc, .docx, .pdf, .txt)
       const fileName = file.name.toLowerCase()
-      const isValidFormat = fileName.endsWith('.docx') || fileName.endsWith('.doc') || fileName.endsWith('.pdf')
+      const isValidFormat = fileName.endsWith('.docx') || fileName.endsWith('.doc') || fileName.endsWith('.pdf') || fileName.endsWith('.txt')
       if (!isValidFormat) {
         continue
       }

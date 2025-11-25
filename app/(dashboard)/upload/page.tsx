@@ -80,7 +80,7 @@ export default function UploadPage() {
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Upload de Arquivos</h1>
         <p className="text-muted-foreground">
-          Envie arquivos DOCX para processamento no pipeline RAG
+          Envie arquivos DOCX, DOC, PDF ou TXT para processamento no pipeline RAG
         </p>
       </div>
 
