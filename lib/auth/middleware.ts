@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { db } from '@/lib/db'
 import { users, organizationMemberships } from '@/lib/db/schema/organizations'
 import { eq } from 'drizzle-orm'
