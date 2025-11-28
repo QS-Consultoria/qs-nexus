@@ -3,8 +3,4 @@ build:
     web: Dockerfile
 run:
   web: npm run start
-release:
-  command:
-    - npm run db:migrate
-  image: web
 
