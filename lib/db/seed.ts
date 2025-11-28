@@ -196,10 +196,12 @@ async function seed() {
     }
 
     // ==================================================
-    // 5. Criar Workflows Globais de Exemplo
+    // 5. Criar Workflows Globais de Exemplo (DISABLED)
     // ==================================================
-    console.log('\n⚙️  Criando workflows globais de exemplo...')
-
+    console.log('\n⚙️  Workflows globais (skipped - schema needs fixing)')
+    
+    // TODO: Fix workflow langchainGraph types and re-enable
+    /*
     const existingWorkflow = await db
       .select()
       .from(workflowTemplates)
@@ -261,6 +263,7 @@ async function seed() {
     } else {
       console.log('   ✓ Workflow "Análise Fiscal Básica" já existe')
     }
+    */
 
     // ==================================================
     // 6. Log de auditoria
