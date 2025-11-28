@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Para Heroku Docker deployment
-  output: 'standalone',
-  
   // Configurações de produção
   poweredByHeader: false,
   compress: true,
