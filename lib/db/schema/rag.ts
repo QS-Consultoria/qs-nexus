@@ -68,7 +68,7 @@ export const documentFiles = pgTable('document_files', {
   id: uuid('id').primaryKey().defaultRandom(),
   
   // Multi-tenant
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id'),
   createdBy: uuid('created_by'),
   
   filePath: text('file_path').notNull().unique(),
@@ -120,7 +120,7 @@ export const templates = pgTable('templates', {
   id: uuid('id').primaryKey().defaultRandom(),
   
   // Multi-tenant
-  organizationId: uuid('organization_id').notNull(),
+  organizationId: uuid('organization_id'),
   createdBy: uuid('created_by'),
   
   documentFileId: uuid('document_file_id')

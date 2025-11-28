@@ -102,7 +102,7 @@ export const workflowExecutions = pgTable(
       .references(() => workflowTemplates.id),
     
     // Tenant isolation
-    organizationId: uuid('organization_id').notNull(), // .references(() => organizations.id)
+    organizationId: uuid('organization_id'), // .references(() => organizations.id)
     userId: uuid('user_id').notNull(), // .references(() => users.id)
     
     // Execution status

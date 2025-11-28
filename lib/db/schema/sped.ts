@@ -61,7 +61,7 @@ export const spedFiles = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
     uploadedBy: uuid('uploaded_by'),
 
     // Identificação do arquivo
@@ -107,7 +107,7 @@ export const chartOfAccounts = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
 
     // Referência ao arquivo SPED
     spedFileId: uuid('sped_file_id')
@@ -157,7 +157,7 @@ export const accountBalances = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
 
     // Referências
     spedFileId: uuid('sped_file_id')
@@ -203,7 +203,7 @@ export const journalEntries = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
 
     // Referência ao arquivo SPED
     spedFileId: uuid('sped_file_id')
@@ -242,7 +242,7 @@ export const journalItems = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
 
     // Referências
     journalEntryId: uuid('journal_entry_id')
@@ -286,7 +286,7 @@ export const csvImports = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
     uploadedBy: uuid('uploaded_by'),
 
     // Identificação do arquivo
@@ -330,7 +330,7 @@ export const csvData = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
 
     // Multi-tenant
-    organizationId: uuid('organization_id').notNull(),
+    organizationId: uuid('organization_id'),
 
     // Referência à importação
     csvImportId: uuid('csv_import_id')
