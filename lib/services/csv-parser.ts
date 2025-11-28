@@ -87,6 +87,7 @@ export async function parseCsvFile(
 
   const result: CsvParseResult = {
     import: {
+      organizationId: 'temp-org-id', // TODO: Pass organizationId from caller
       fileName: filePath.split('/').pop() || 'unknown.csv',
       filePath,
       fileHash,
