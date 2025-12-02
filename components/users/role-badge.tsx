@@ -13,6 +13,11 @@ const roleConfig: Record<GlobalRole | OrgRole, { label: string; color: string; b
     color: 'text-red-700 dark:text-red-400',
     bgColor: 'bg-red-100 dark:bg-red-950 border-red-200 dark:border-red-800',
   },
+  owner: {
+    label: 'Owner',
+    color: 'text-yellow-700 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800',
+  },
   admin_fiscal: {
     label: 'Admin Fiscal',
     color: 'text-blue-700 dark:text-blue-400',

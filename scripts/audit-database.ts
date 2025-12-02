@@ -403,8 +403,8 @@ async function generateReport() {
   
   const hasAllTables = results.find(r => r.section === 'Estrutura de Tabelas')?.status === 'ok'
   const hasExtensions = results.find(r => r.section === 'Extensões PostgreSQL')?.status === 'ok'
-  const hasFKs = results.find(r => r.section === 'Foreign Keys')?.details.length > 0
-  const hasIndexes = results.find(r => r.section === 'Índices')?.details.length > 0
+  const hasFKs = (results.find(r => r.section === 'Foreign Keys')?.details?.length || 0) > 0
+  const hasIndexes = (results.find(r => r.section === 'Índices')?.details?.length || 0) > 0
   const hasData = results.find(r => r.section === 'Dados Existentes')?.status !== 'error'
   
   console.log(`   ${hasExtensions ? '✅' : '❌'} pgvector instalado`)

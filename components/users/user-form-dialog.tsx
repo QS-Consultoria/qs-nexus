@@ -35,6 +35,7 @@ const orgRoles: OrgRole[] = ['admin_fiscal', 'user_fiscal', 'consultor_ia', 'vie
 
 const roleLabels: Record<GlobalRole | OrgRole, string> = {
   super_admin: 'Super Admin',
+  owner: 'Proprietário',
   admin_fiscal: 'Admin Fiscal',
   user_fiscal: 'Usuário Fiscal',
   consultor_ia: 'Consultor IA',

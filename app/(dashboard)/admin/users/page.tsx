@@ -262,7 +262,7 @@ export default function UsersPage() {
         onOpenChange={setIsDialogOpen}
         onSuccess={loadData}
         organizations={organizations}
-        currentUserGlobalRole={(session?.user?.globalRole as GlobalRole) || 'viewer'}
+        currentUserGlobalRole={((session?.user as any)?.globalRole as GlobalRole) || 'viewer'}
       />
     </div>
   )

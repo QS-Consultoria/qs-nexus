@@ -78,7 +78,9 @@ export async function GET(request: NextRequest) {
       .groupBy(ragUsers.globalRole)
 
     const byRole = byRoleResults.reduce((acc, { role, count }) => {
-      acc[role] = Number(count)
+      if (role) {
+        acc[role] = Number(count)
+      }
       return acc
     }, {} as Record<string, number>)
 

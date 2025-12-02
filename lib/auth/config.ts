@@ -82,14 +82,15 @@ const authConfig = NextAuth({
     },
     async session({ session, token }) {
       if (session.user && token) {
-        session.user.id = token.id as string
-        session.user.email = token.email as string
-        session.user.name = token.name as string
-        session.user.globalRole = token.globalRole as GlobalRole
-        session.user.isActive = token.isActive as boolean
-        session.user.organizationId = token.organizationId as string | null
-        session.user.organizationRole = token.organizationRole as OrgRole | null
-        session.user.organizationName = token.organizationName as string | null
+        const user = session.user as any
+        user.id = token.id as string
+        user.email = token.email as string
+        user.name = token.name as string
+        user.globalRole = token.globalRole as GlobalRole
+        user.isActive = token.isActive as boolean
+        user.organizationId = token.organizationId as string | null
+        user.organizationRole = token.organizationRole as OrgRole | null
+        user.organizationName = token.organizationName as string | null
       }
       return session
     },
