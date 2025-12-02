@@ -29,7 +29,15 @@ export function ChatInterface() {
     },
     onError: error => {
       console.error('Erro no chat:', error)
-      toast.error('Erro ao enviar mensagem. Tente novamente.')
+      
+      // Tratamento específico de erros
+      if (error.message?.includes('401') || error.message?.includes('autenticado')) {
+        toast.error('Você precisa fazer login para usar o chat.')
+      } else if (error.message?.includes('API key')) {
+        toast.error('Erro de configuração da OpenAI. Contate o administrador.')
+      } else {
+        toast.error('Erro ao enviar mensagem. Tente novamente.')
+      }
     },
   })
 

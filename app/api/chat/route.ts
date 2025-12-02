@@ -48,11 +48,12 @@ ${chunk.contentMarkdown}
 
 export async function POST(request: NextRequest) {
   try {
-    // Verifica autenticação
-    const session = await auth()
-    if (!session) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
+    // TEMPORARIAMENTE DESABILITADO - Middleware também está desabilitado
+    // TODO: Reabilitar quando implementar autenticação completa
+    // const session = await auth()
+    // if (!session) {
+    //   return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    // }
 
     const body = await request.json()
     
