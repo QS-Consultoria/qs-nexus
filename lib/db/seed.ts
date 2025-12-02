@@ -253,17 +253,8 @@ async function seed() {
     // ==================================================
     // 6. Log de auditoria
     // ==================================================
-    await db.insert(auditLogs).values({
-      organizationId: orgId,
-      userId: userId,
-      action: 'system.seed',
-      entityType: 'system',
-      entityId: 'seed',
-      metadata: {
-        timestamp: new Date().toISOString(),
-        itemsCreated: ['organization', 'super_admin', 'schemas', 'workflows'],
-      },
-    })
+    // NOTA: auditLogs removido do schema
+    console.log('   ✓ Seed data criado com sucesso')
 
     console.log('\n✅ Seed concluído com sucesso!\n')
     console.log('═══════════════════════════════════════════')
