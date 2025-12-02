@@ -134,51 +134,8 @@ async function seed() {
     // ==================================================
     console.log('\n📋 Criando schemas de metadados base...')
 
-    // Schema SPED ECD
-    const existingSpedSchema = await db
-      .select()
-      .from(metadataSchemas)
-      .where(eq(metadataSchemas.type, 'sped_ecd'))
-      .limit(1)
-
-    if (existingSpedSchema.length === 0) {
-      await db.insert(metadataSchemas).values({
-        name: BASE_SCHEMAS.sped_ecd.name,
-        type: BASE_SCHEMAS.sped_ecd.type,
-        description: 'Schema padrão para arquivos SPED ECD',
-        baseSchema: BASE_SCHEMAS.sped_ecd.baseSchema,
-        customFields: { fields: [] },
-        validationRules: null,
-        isActive: true,
-        createdBy: userId,
-      })
-      console.log('   ✓ Schema SPED ECD criado')
-    } else {
-      console.log('   ✓ Schema SPED ECD já existe')
-    }
-
-    // Schema Legal Documents
-    const existingLegalSchema = await db
-      .select()
-      .from(metadataSchemas)
-      .where(eq(metadataSchemas.type, 'legal_document'))
-      .limit(1)
-
-    if (existingLegalSchema.length === 0) {
-      await db.insert(metadataSchemas).values({
-        name: BASE_SCHEMAS.legal_document.name,
-        type: BASE_SCHEMAS.legal_document.type,
-        description: 'Schema padrão para documentos legais',
-        baseSchema: BASE_SCHEMAS.legal_document.baseSchema,
-        customFields: { fields: [] },
-        validationRules: null,
-        isActive: true,
-        createdBy: userId,
-      })
-      console.log('   ✓ Schema Legal Documents criado')
-    } else {
-      console.log('   ✓ Schema Legal Documents já existe')
-    }
+    // NOTA: Schemas e workflows podem ser criados via UI após login
+    console.log('   ℹ️  Schemas podem ser criados via UI em /settings/template-schema')
 
     // ==================================================
     // 5. Criar Workflows Globais de Exemplo (DISABLED)
