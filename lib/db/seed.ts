@@ -50,7 +50,7 @@ async function seed() {
         .values({
           name: 'QS Consultoria',
           slug: 'qs-consultoria',
-          document: '00000000000100', // CNPJ fictício
+          cnpj: '00000000000100', // CNPJ fictício
           logoUrl: null,
           settings: {
             theme: 'dark',
