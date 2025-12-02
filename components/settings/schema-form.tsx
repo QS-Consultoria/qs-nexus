@@ -67,6 +67,7 @@ export function SchemaForm({ config, onSubmit, onCancel, isLoading = false }: Sc
     ? {
         id: config?.id || 'preview',
         name: formData.name,
+        documentType: config?.documentType || 'geral',
         fields: formData.fields,
         isActive: formData.isActive,
         createdAt: config?.createdAt || new Date(),
