@@ -12,6 +12,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Building2, Plus, Edit2, Trash2, Users } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -27,6 +37,13 @@ interface Organization {
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    cnpj: '',
+    slug: '',
+  })
 
   useEffect(() => {
     loadOrganizations()
@@ -45,6 +62,68 @@ export default function OrganizationsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const formatCNPJInput = (value: string): string => {
+    const numbers = value.replace(/\D/g, '').slice(0, 14)
+    if (numbers.length <= 2) return numbers
+    if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`
+    if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`
+    if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`
+    return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12)}`
+  }
+
+  const handleCreateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.name || !formData.slug) {
+      toast.error('Nome e slug são obrigatórios')
+      return
+    }
+
+    setIsCreating(true)
+    try {
+      const response = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          cnpj: formData.cnpj.replace(/\D/g, '') || null,
+        }),
+      })
+
+      if (response.ok) {
+        toast.success('Organização criada com sucesso!')
+        setIsDialogOpen(false)
+        setFormData({ name: '', cnpj: '', slug: '' })
+        loadOrganizations()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Erro ao criar organização')
+      }
+    } catch (error) {
+      console.error('Erro ao criar organização:', error)
+      toast.error('Erro ao criar organização')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  }
+
+  const handleNameChange = (name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      name,
+      slug: generateSlug(name),
+    }))
   }
 
   const formatCNPJ = (cnpj: string | null) => {
@@ -77,7 +156,7 @@ export default function OrganizationsPage() {
             Gerencie as organizações e clientes do sistema
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Organização
         </Button>
@@ -223,6 +302,88 @@ export default function OrganizationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog para Nova Organização */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle>Nova Organização</DialogTitle>
+                <DialogDescription>
+                  Adicione um novo cliente ao sistema
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateOrganization}>
+            <div className="space-y-4 px-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Nome <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="Ex: Empresa Demo Comercial"
+                  value={formData.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cnpj">
+                  CNPJ <span className="text-xs text-muted-foreground">(opcional)</span>
+                </Label>
+                <Input
+                  id="cnpj"
+                  placeholder="00.000.000/0001-00"
+                  value={formData.cnpj}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cnpj: formatCNPJInput(e.target.value) }))}
+                  maxLength={18}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formatação automática
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slug">
+                  Slug <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="slug"
+                  placeholder="empresa-demo-comercial"
+                  value={formData.slug}
+                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Gerado automaticamente do nome
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                disabled={isCreating}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? 'Criando...' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

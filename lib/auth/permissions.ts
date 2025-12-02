@@ -156,8 +156,10 @@ export const ROLE_PERMISSIONS: Record<GlobalRole | OrgRole, Permission[]> = {
 /**
  * Verifica se um role tem uma permissão específica
  */
-export function hasPermission(role: GlobalRole | OrgRole, permission: Permission): boolean {
+export function hasPermission(role: GlobalRole | OrgRole | undefined, permission: Permission): boolean {
+  if (!role) return false
   const permissions = ROLE_PERMISSIONS[role]
+  if (!permissions) return false
   return permissions.includes(permission)
 }
 
@@ -165,9 +167,10 @@ export function hasPermission(role: GlobalRole | OrgRole, permission: Permission
  * Verifica se um role tem TODAS as permissões especificadas
  */
 export function hasAllPermissions(
-  role: GlobalRole | OrgRole,
+  role: GlobalRole | OrgRole | undefined,
   permissions: Permission[]
 ): boolean {
+  if (!role) return false
   return permissions.every((p) => hasPermission(role, p))
 }
 
@@ -175,16 +178,18 @@ export function hasAllPermissions(
  * Verifica se um role tem ALGUMA das permissões especificadas
  */
 export function hasAnyPermission(
-  role: GlobalRole | OrgRole,
+  role: GlobalRole | OrgRole | undefined,
   permissions: Permission[]
 ): boolean {
+  if (!role) return false
   return permissions.some((p) => hasPermission(role, p))
 }
 
 /**
  * Retorna todas as permissões de um role
  */
-export function getRolePermissions(role: GlobalRole | OrgRole): Permission[] {
+export function getRolePermissions(role: GlobalRole | OrgRole | undefined): Permission[] {
+  if (!role) return []
   return ROLE_PERMISSIONS[role] || []
 }
 

@@ -1,7 +1,12 @@
 import { pgTable, text, uuid, boolean, timestamp, jsonb, pgEnum } from 'drizzle-orm/pg-core'
 
-// Enum para roles de membros
-export const memberRoleEnum = pgEnum('member_role', ['admin', 'member', 'viewer'])
+// Enum para roles de membros em organizações
+export const orgRoleEnum = pgEnum('org_role', [
+  'admin_fiscal',
+  'user_fiscal',
+  'consultor_ia',
+  'viewer'
+])
 
 // Tabela de organizações
 export const organizations = pgTable('organizations', {
@@ -23,10 +28,12 @@ export const organizationMembers = pgTable('organization_members', {
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull(), // Referencia rag_users
-  role: text('role').notNull().default('member'), // 'admin', 'member', 'viewer'
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  role: orgRoleEnum('role').notNull().default('viewer'),
+  invitedBy: uuid('invited_by'), // Usuário que convidou
+  invitedAt: timestamp('invited_at', { withTimezone: true }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 // Types
@@ -35,4 +42,4 @@ export type NewOrganization = typeof organizations.$inferInsert
 export type OrganizationMember = typeof organizationMembers.$inferSelect
 export type NewOrganizationMember = typeof organizationMembers.$inferInsert
 
-export type MemberRole = 'admin' | 'member' | 'viewer'
+export type OrgRole = 'admin_fiscal' | 'user_fiscal' | 'consultor_ia' | 'viewer'

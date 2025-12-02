@@ -1,10 +1,105 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, Plus, UserPlus, Shield } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Users, UserPlus, Search, Edit2, Building2, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { RoleBadge } from '@/components/users/role-badge'
+import { UserFormDialog } from '@/components/users/user-form-dialog'
+import { useSession } from 'next-auth/react'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { GlobalRole } from '@/lib/auth/permissions'
+
+interface User {
+  id: string
+  name: string
+  email: string
+  globalRole: string
+  isActive: boolean
+  lastLoginAt: Date | null
+  organizations: Array<{
+    id: string
+    name: string
+    role: string
+    isActive: boolean
+  }>
+}
+
+interface Stats {
+  total: number
+  active: number
+  inactive: number
+  byRole: Record<string, number>
+}
 
 export default function UsersPage() {
+  const { data: session } = useSession()
+  const [users, setUsers] = useState<User[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      const [usersRes, statsRes, orgsRes] = await Promise.all([
+        fetch('/api/users'),
+        fetch('/api/users/stats'),
+        fetch('/api/organizations'),
+      ])
+
+      if (usersRes.ok) {
+        const data = await usersRes.json()
+        setUsers(data.users || [])
+      }
+
+      if (statsRes.ok) {
+        const data = await statsRes.json()
+        setStats(data)
+      }
+
+      if (orgsRes.ok) {
+        const data = await orgsRes.json()
+        setOrganizations(data.organizations || [])
+      }
+    } catch (error) {
+      console.error('Error loading data:', error)
+      toast.error('Erro ao carregar dados')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6">
       {/* Header */}
@@ -18,83 +113,157 @@ export default function UsersPage() {
             Gerencie usuários e permissões de acesso ao sistema
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsDialogOpen(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           Novo Usuário
         </Button>
       </div>
 
-      {/* Placeholder */}
-      <Card className="border-dashed">
-        <CardContent className="pt-12 pb-12">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <Shield className="h-16 w-16 text-muted-foreground opacity-50" />
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">Gerenciamento de Usuários</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Esta funcionalidade está em desenvolvimento. Em breve você poderá criar, 
-                editar e gerenciar usuários, definir roles e permissões por organização.
-              </p>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.total || 0}</div>
+            <p className="text-xs text-muted-foreground">usuários cadastrados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ativos</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.active || 0}</div>
+            <p className="text-xs text-muted-foreground">em operação</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inativos</CardTitle>
+            <XCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.inactive || 0}</div>
+            <p className="text-xs text-muted-foreground">desativados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Admins</CardTitle>
+            <Shield className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {(stats?.byRole?.admin_fiscal || 0) + (stats?.byRole?.super_admin || 0)}
             </div>
-            <div className="flex gap-2 pt-4">
-              <Button disabled variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Usuário
-              </Button>
-              <Button disabled variant="outline">
-                Gerenciar Permissões
-              </Button>
-            </div>
+            <p className="text-xs text-muted-foreground">administradores</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Usuários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role Global</TableHead>
+                  <TableHead>Organizações</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Último Login</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      Nenhum usuário encontrado
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <RoleBadge role={user.globalRole as any} size="sm" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.organizations.slice(0, 2).map((org) => (
+                            <Badge key={org.id} variant="outline" className="text-xs">
+                              {org.name}
+                            </Badge>
+                          ))}
+                          {user.organizations.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{user.organizations.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          {user.isActive ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {user.lastLoginAt
+                          ? formatDistanceToNow(new Date(user.lastLoginAt), {
+                              addSuffix: true,
+                              locale: ptBR,
+                            })
+                          : 'Nunca'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" title="Editar">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
 
-      {/* Info Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Roles Disponíveis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 text-red-500" />
-                <span className="font-medium">Admin</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 text-blue-500" />
-                <span className="font-medium">Member</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 text-gray-500" />
-                <span className="font-medium">Viewer</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Permissões</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Controle granular de acesso por organização e funcionalidade
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Multi-tenant</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Usuários podem ter diferentes roles em diferentes organizações
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Dialog */}
+      <UserFormDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSuccess={loadData}
+        organizations={organizations}
+        currentUserGlobalRole={(session?.user?.globalRole as GlobalRole) || 'viewer'}
+      />
     </div>
   )
 }

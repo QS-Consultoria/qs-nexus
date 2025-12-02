@@ -5,6 +5,13 @@ import * as spedSchema from './schema/sped'
 import * as workflowSchema from './schema/workflows'
 import * as organizationsSchema from './schema/organizations'
 import * as metadataSchema from './schema/metadata-schemas'
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+// Load .env.local for scripts (Next.js loads it automatically for server/client)
+if (!process.env.DATABASE_URL) {
+  config({ path: resolve(process.cwd(), '.env.local') })
+}
 
 // Mesclar todos os schemas
 const schema = {
@@ -15,7 +22,7 @@ const schema = {
   ...metadataSchema,
 }
 
-// Next.js automatically loads .env.local, so we don't need dotenv.config()
+// Validate DATABASE_URL after attempting to load
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set in environment variables')
 }

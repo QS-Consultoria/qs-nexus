@@ -1,4 +1,5 @@
 import 'next-auth'
+import type { GlobalRole, OrgRole } from '@/lib/auth/permissions'
 
 declare module 'next-auth' {
   interface Session {
@@ -6,6 +7,11 @@ declare module 'next-auth' {
       id: string
       email: string
       name: string
+      globalRole: GlobalRole
+      isActive: boolean
+      organizationId: string | null
+      organizationRole: OrgRole | null
+      organizationName: string | null
     }
   }
 
@@ -13,6 +19,11 @@ declare module 'next-auth' {
     id: string
     email: string
     name: string
+    globalRole?: GlobalRole
+    isActive?: boolean
+    organizationId?: string | null
+    organizationRole?: OrgRole | null
+    organizationName?: string | null
   }
 }
 
@@ -21,5 +32,10 @@ declare module 'next-auth/jwt' {
     id: string
     email: string
     name: string
+    globalRole: GlobalRole
+    isActive: boolean
+    organizationId?: string | null
+    organizationRole?: OrgRole | null
+    organizationName?: string | null
   }
 }

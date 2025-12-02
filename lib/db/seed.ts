@@ -95,6 +95,8 @@ async function seed() {
           email: 'admin@qsconsultoria.com.br',
           password: hashedPassword,
           name: 'Administrador QS',
+          globalRole: 'super_admin',
+          isActive: true,
         })
         .returning()
 
@@ -121,12 +123,84 @@ async function seed() {
       await db.insert(organizationMembers).values({
         organizationId: orgId,
         userId: userId,
-        role: 'admin',
+        role: 'admin_fiscal',
         isActive: true,
       })
       console.log('   ✓ Membership criada')
     } else {
       console.log('   ✓ Membership já existe')
+    }
+
+    // ==================================================
+    // 3.1 Criar usuários de exemplo
+    // ==================================================
+    console.log('\n👥 Criando usuários de exemplo...')
+
+    const exampleUsers = [
+      {
+        email: 'fiscal@qsconsultoria.com.br',
+        password: 'fiscal123',
+        name: 'Carlos Fiscal',
+        globalRole: 'admin_fiscal' as const,
+        orgRole: 'admin_fiscal' as const,
+      },
+      {
+        email: 'usuario@qsconsultoria.com.br',
+        password: 'usuario123',
+        name: 'Maria Usuária',
+        globalRole: 'user_fiscal' as const,
+        orgRole: 'user_fiscal' as const,
+      },
+      {
+        email: 'consultor@qsconsultoria.com.br',
+        password: 'consultor123',
+        name: 'João Consultor',
+        globalRole: 'consultor_ia' as const,
+        orgRole: 'consultor_ia' as const,
+      },
+      {
+        email: 'viewer@qsconsultoria.com.br',
+        password: 'viewer123',
+        name: 'Ana Visualizadora',
+        globalRole: 'viewer' as const,
+        orgRole: 'viewer' as const,
+      },
+    ]
+
+    for (const userData of exampleUsers) {
+      const [existing] = await db
+        .select()
+        .from(ragUsers)
+        .where(eq(ragUsers.email, userData.email))
+        .limit(1)
+
+      if (existing) {
+        console.log(`   ✓ ${userData.name} já existe`)
+        continue
+      }
+
+      const hashedPwd = await bcrypt.hash(userData.password, 10)
+      const [newUser] = await db
+        .insert(ragUsers)
+        .values({
+          email: userData.email,
+          password: hashedPwd,
+          name: userData.name,
+          globalRole: userData.globalRole,
+          isActive: true,
+        })
+        .returning()
+
+      await db.insert(organizationMembers).values({
+        organizationId: orgId,
+        userId: newUser.id,
+        role: userData.orgRole,
+        invitedBy: userId,
+        invitedAt: new Date(),
+        isActive: true,
+      })
+
+      console.log(`   ✓ ${userData.name} criado: ${userData.email}`)
     }
 
     // ==================================================
@@ -216,8 +290,12 @@ async function seed() {
     console.log('\n✅ Seed concluído com sucesso!\n')
     console.log('═══════════════════════════════════════════')
     console.log('📊 Organização: QS Consultoria')
-    console.log('👤 Super Admin: admin@qsconsultoria.com.br')
-    console.log('🔑 Senha: admin123!@#')
+    console.log('\n👤 Usuários Criados:')
+    console.log('   🔴 Super Admin: admin@qsconsultoria.com.br / admin123!@#')
+    console.log('   🔵 Admin Fiscal: fiscal@qsconsultoria.com.br / fiscal123')
+    console.log('   🟢 User Fiscal: usuario@qsconsultoria.com.br / usuario123')
+    console.log('   🟣 Consultor IA: consultor@qsconsultoria.com.br / consultor123')
+    console.log('   ⚪ Viewer: viewer@qsconsultoria.com.br / viewer123')
     console.log('═══════════════════════════════════════════\n')
   } catch (error) {
     console.error('❌ Erro no seed:', error)

@@ -133,6 +133,7 @@ export function KeyboardShortcuts() {
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.key) return
       setPressedKeys(prev => {
         const newSet = new Set(prev)
         newSet.delete(e.key.toLowerCase())
