@@ -18,7 +18,7 @@ async function main() {
   }
 
   console.log('Connecting to database...')
-  const client = postgres(databaseUrl, { max: 1 })
+  const client = postgres(databaseUrl, { max: 1, ssl: 'require' })
   const db = drizzle(client)
 
   console.log('Running migrations...')
