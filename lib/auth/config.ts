@@ -60,22 +60,39 @@ const authConfig = NextAuth({
         token.email = user.email
         token.name = user.name
         
-        // Buscar informações completas do usuário
-        const userWithOrgs = await getUserWithOrganizations(user.id as string)
-        if (userWithOrgs) {
-          token.globalRole = userWithOrgs.globalRole
-          token.isActive = userWithOrgs.isActive
-          
-          // Pegar primeira organização ativa como padrão
-          const defaultOrg = userWithOrgs.organizations.find(o => o.isActive)
-          if (defaultOrg) {
-            token.organizationId = defaultOrg.id
-            token.organizationRole = defaultOrg.role
-            token.organizationName = defaultOrg.name
+        try {
+          // Buscar informações completas do usuário
+          const userWithOrgs = await getUserWithOrganizations(user.id as string)
+          if (userWithOrgs) {
+            token.globalRole = userWithOrgs.globalRole
+            token.isActive = userWithOrgs.isActive
+            
+            // Pegar primeira organização ativa como padrão
+            const defaultOrg = userWithOrgs.organizations.find(o => o.isActive)
+            if (defaultOrg) {
+              token.organizationId = defaultOrg.id
+              token.organizationRole = defaultOrg.role
+              token.organizationName = defaultOrg.name
+            }
+            
+            // Atualizar último login
+            await updateLastLogin(user.id as string)
+          } else {
+            // Fallback: se não encontrar org, define valores padrão
+            token.globalRole = 'viewer'
+            token.isActive = true
+            token.organizationId = null
+            token.organizationRole = null
+            token.organizationName = null
           }
-          
-          // Atualizar último login
-          await updateLastLogin(user.id as string)
+        } catch (error) {
+          console.error('Error fetching user organizations:', error)
+          // Fallback em caso de erro
+          token.globalRole = 'viewer'
+          token.isActive = true
+          token.organizationId = null
+          token.organizationRole = null
+          token.organizationName = null
         }
       }
       return token
