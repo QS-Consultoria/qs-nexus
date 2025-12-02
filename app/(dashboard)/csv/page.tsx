@@ -71,7 +71,7 @@ const STATUS_OPTIONS = [
 ]
 
 export default function CsvPage() {
-  const { activeOrganization } = useOrganization()
+  const { currentOrg } = useOrganization()
   
   const [files, setFiles] = useState<CsvFile[]>([])
   const [stats, setStats] = useState<CsvStats | null>(null)

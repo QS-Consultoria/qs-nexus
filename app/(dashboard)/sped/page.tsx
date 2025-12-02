@@ -76,7 +76,7 @@ const STATUS_OPTIONS = [
 ]
 
 export default function SpedPage() {
-  const { activeOrganization } = useOrganization()
+  const { currentOrg } = useOrganization()
   
   const [files, setFiles] = useState<SpedFile[]>([])
   const [stats, setStats] = useState<SpedStats | null>(null)
@@ -91,7 +91,7 @@ export default function SpedPage() {
 
   useEffect(() => {
     loadSpedFiles()
-  }, [activeOrganization?.id, statusFilter, fileTypeFilter, cnpjFilter, yearFrom, yearTo])
+  }, [currentOrg?.id, statusFilter, fileTypeFilter, cnpjFilter, yearFrom, yearTo])
 
   const loadSpedFiles = async () => {
     setIsLoading(true)
@@ -99,8 +99,8 @@ export default function SpedPage() {
       const params = new URLSearchParams()
       
       // Filtro por organização
-      if (activeOrganization?.id) {
-        params.set('organizationId', activeOrganization.id)
+      if (currentOrg?.id) {
+        params.set('organizationId', currentOrg.id)
       }
       
       // Filtros específicos
@@ -189,10 +189,10 @@ export default function SpedPage() {
               </p>
             </div>
           </div>
-          {activeOrganization && (
+          {currentOrg && (
             <Badge variant="outline" className="mt-3 gap-2">
               <Building2 className="h-3 w-3" />
-              {activeOrganization.name}
+              {currentOrg.name}
             </Badge>
           )}
         </div>

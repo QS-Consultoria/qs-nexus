@@ -85,7 +85,7 @@ interface DataByOrganization {
 }
 
 export default function DashboardPage() {
-  const { activeOrganization, organizations } = useOrganization()
+  const { currentOrg, organizations } = useOrganization()
   
   const [stats, setStats] = useState<StatsData | null>(null)
   const [modelStats, setModelStats] = useState<ModelStatsData | null>(null)
@@ -199,10 +199,10 @@ export default function DashboardPage() {
             Visão geral do sistema de gestão de dados
           </p>
         </div>
-        {activeOrganization && (
+        {currentOrg && (
           <Badge variant="outline" className="gap-2 w-fit">
             <Building2 className="h-3 w-3" />
-            {activeOrganization.name}
+            {currentOrg.name}
           </Badge>
         )}
       </div>

@@ -76,7 +76,7 @@ const STATUS_OPTIONS = [
 ]
 
 export default function DocumentsPage() {
-  const { activeOrganization } = useOrganization()
+  const { currentOrg } = useOrganization()
   
   const [files, setFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -121,8 +121,8 @@ export default function DocumentsPage() {
         })
 
         // Filtro por organização
-        if (activeOrganization?.id) {
-          params.set('organizationId', activeOrganization.id)
+        if (currentOrg?.id) {
+          params.set('organizationId', currentOrg.id)
         }
 
         if (statusFilter !== 'all') params.set('status', statusFilter)
@@ -168,7 +168,7 @@ export default function DocumentsPage() {
     dateTo,
     sortBy,
     sortOrder,
-    activeOrganization?.id,
+    currentOrg?.id,
   ])
 
   const handleRefresh = () => {
@@ -207,10 +207,10 @@ export default function DocumentsPage() {
               </p>
             </div>
           </div>
-          {activeOrganization && (
+          {currentOrg && (
             <Badge variant="outline" className="mt-3 gap-2">
               <Building2 className="h-3 w-3" />
-              {activeOrganization.name}
+              {currentOrg.name}
             </Badge>
           )}
         </div>
