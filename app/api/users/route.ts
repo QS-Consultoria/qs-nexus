@@ -14,10 +14,17 @@ import { hasPermission } from '@/lib/auth/permissions'
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔐 [GET /api/users] Starting...')
     const session = await auth()
+    console.log('🔐 [GET /api/users] Session:', session ? 'EXISTS' : 'NULL')
+    console.log('🔐 [GET /api/users] User:', session?.user?.email, 'Role:', session?.user?.globalRole)
+    
     if (!session?.user) {
+      console.log('❌ [GET /api/users] No session - returning 401')
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+    
+    console.log('✅ [GET /api/users] Session OK, proceeding...')
 
     // Verificar permissão (aceita usuários sem globalRole como viewer)
     const userRole = session.user.globalRole || 'viewer'
