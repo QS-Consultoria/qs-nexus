@@ -116,7 +116,9 @@ function generateCsvInsightMarkdown(
   if (numericCols > 3 && categoricalCols >= 1) {
     possibleUses.push('Análise financeira ou vendas')
   }
-  if (headers.some(h => h.toLowerCase().includes('data') || h.toLowerCase().includes('date'))) {
+  
+  const columnNames = Object.keys(columnStats)
+  if (columnNames.some(h => h.toLowerCase().includes('data') || h.toLowerCase().includes('date'))) {
     possibleUses.push('Análise temporal/séries temporais')
   }
   if (categoricalCols > numericCols) {
