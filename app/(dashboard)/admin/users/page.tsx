@@ -17,6 +17,7 @@ import { Users, UserPlus, Search, Edit2, Building2, Shield, CheckCircle2, XCircl
 import { toast } from 'react-hot-toast'
 import { RoleBadge } from '@/components/users/role-badge'
 import { UserFormDialog } from '@/components/users/user-form-dialog'
+import { UserOrgManagerDialog } from '@/components/users/user-org-manager-dialog'
 import { useSession } from 'next-auth/react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -52,6 +53,8 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [isOrgDialogOpen, setIsOrgDialogOpen] = useState(false)
+  const [managingOrgUser, setManagingOrgUser] = useState<User | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
@@ -156,6 +159,11 @@ export default function UsersPage() {
   const handleNewUser = () => {
     setEditingUser(null)
     setIsDialogOpen(true)
+  }
+
+  const handleManageOrgs = (user: User) => {
+    setManagingOrgUser(user)
+    setIsOrgDialogOpen(true)
   }
 
   const filteredUsers = users.filter(user =>
@@ -323,7 +331,12 @@ export default function UsersPage() {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Gerenciar organizações">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Gerenciar organizações"
+                            onClick={() => handleManageOrgs(user)}
+                          >
                             <Building2 className="h-4 w-4" />
                           </Button>
                           <Button
@@ -363,6 +376,14 @@ export default function UsersPage() {
         user={editingUser}
         organizations={organizations}
         currentUserGlobalRole={((session?.user as any)?.globalRole as GlobalRole) || 'viewer'}
+      />
+
+      <UserOrgManagerDialog
+        open={isOrgDialogOpen}
+        onOpenChange={setIsOrgDialogOpen}
+        user={managingOrgUser}
+        allOrganizations={organizations}
+        onSuccess={loadData}
       />
     </div>
   )

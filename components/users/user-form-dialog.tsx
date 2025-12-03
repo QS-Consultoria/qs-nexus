@@ -147,21 +147,29 @@ export function UserFormDialog({
       
       const payload: any = {
         name,
-        organizationId,
-        orgRole,
         isActive: true,
       }
       
-      // Apenas para criação
+      // Para CRIAÇÃO de usuário
       if (!isEditing) {
         payload.email = email
         payload.password = password
+        payload.organizationId = organizationId
+        payload.orgRole = orgRole
+        
+        // GlobalRole para criação (se super_admin selecionou)
+        if (isSuperAdmin && globalRole) {
+          payload.globalRole = globalRole
+        }
+      } else {
+        // Para EDIÇÃO de usuário
+        // GlobalRole (apenas super_admin pode editar)
+        if (isSuperAdmin && globalRole) {
+          payload.globalRole = globalRole
+        }
       }
-      
-      // GlobalRole (apenas para super_admin ou se definido)
-      if (globalRole) {
-        payload.globalRole = globalRole
-      }
+
+      console.log('📤 Payload:', method, url, payload)
 
       const response = await fetch(url, {
         method,
