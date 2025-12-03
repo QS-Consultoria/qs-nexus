@@ -183,6 +183,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email já cadastrado' }, { status: 409 })
     }
 
+    // Buscar organização para validações
+    const [targetOrg] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, data.organizationId!))
+      .limit(1)
+
+    if (!targetOrg) {
+      return NextResponse.json({ error: 'Organização não encontrada' }, { status: 404 })
+    }
+
+    // REGRA: Super Admin e Admin Fiscal só podem ser da QS Consultoria
+    const isQSConsultoria = targetOrg.name === 'QS Consultoria'
+    
+    if (!isQSConsultoria && data.globalRole && ['super_admin', 'admin_fiscal'].includes(data.globalRole)) {
+      return NextResponse.json(
+        { error: 'Super Admin e Admin Fiscal só podem ser criados na QS Consultoria' },
+        { status: 403 }
+      )
+    }
+
     // Se não é super_admin, só pode criar na própria org
     if (session.user.globalRole !== 'super_admin') {
       if (!data.organizationId || data.organizationId !== session.user.organizationId) {

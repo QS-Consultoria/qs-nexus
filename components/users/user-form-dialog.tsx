@@ -23,9 +23,15 @@ import { UserPlus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { GlobalRole, OrgRole } from '@/lib/auth/permissions'
 
-const globalRoles: GlobalRole[] = [
+const globalRolesQS: GlobalRole[] = [
   'super_admin',
   'admin_fiscal',
+  'user_fiscal',
+  'consultor_ia',
+  'viewer',
+]
+
+const globalRolesClient: GlobalRole[] = [
   'user_fiscal',
   'consultor_ia',
   'viewer',
@@ -71,6 +77,13 @@ export function UserFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSuperAdmin = currentUserGlobalRole === 'super_admin'
+  
+  // Verificar se a organização selecionada é QS Consultoria
+  const selectedOrg = organizations.find((org) => org.id === organizationId)
+  const isQSConsultoria = selectedOrg?.name === 'QS Consultoria'
+  
+  // Definir quais roles globais estão disponíveis
+  const availableGlobalRoles = isQSConsultoria ? globalRolesQS : globalRolesClient
 
   // Reset form quando abrir/fechar
   useEffect(() => {
@@ -189,33 +202,18 @@ export function UserFormDialog({
               />
             </div>
 
-            {isSuperAdmin && (
-              <div className="space-y-2">
-                <Label htmlFor="globalRole">Role Global (Opcional)</Label>
-                <Select
-                  value={globalRole}
-                  onValueChange={(value: GlobalRole) => setGlobalRole(value)}
-                >
-                  <SelectTrigger id="globalRole">
-                    <SelectValue placeholder="Selecione a role global" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
-                    {globalRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {roleLabels[role]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="organizationId">Organização *</Label>
               <Select
                 value={organizationId}
-                onValueChange={(value) => setOrganizationId(value)}
+                onValueChange={(value) => {
+                  setOrganizationId(value)
+                  // Reset globalRole se não for QS Consultoria
+                  const org = organizations.find((o) => o.id === value)
+                  if (org?.name !== 'QS Consultoria' && globalRole === 'super_admin') {
+                    setGlobalRole('')
+                  }
+                }}
               >
                 <SelectTrigger id="organizationId">
                   <SelectValue placeholder="Selecione a organização" />
@@ -229,6 +227,38 @@ export function UserFormDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            {(isSuperAdmin || isQSConsultoria) && organizationId && (
+              <div className="space-y-2">
+                <Label htmlFor="globalRole">Role Global (Opcional)</Label>
+                <Select
+                  value={globalRole}
+                  onValueChange={(value: GlobalRole) => setGlobalRole(value)}
+                >
+                  <SelectTrigger id="globalRole">
+                    <SelectValue placeholder="Selecione a role global" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma</SelectItem>
+                    {availableGlobalRoles.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {roleLabels[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isQSConsultoria && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    ⚠️ Usuários de clientes não podem ser Super Admin ou Admin Fiscal
+                  </p>
+                )}
+                {isQSConsultoria && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    ℹ️ QS Consultoria: pode criar Super Admins e Admins
+                  </p>
+                )}
+              </div>
+            )}
 
             {organizationId && (
               <div className="space-y-2">

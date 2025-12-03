@@ -109,6 +109,29 @@ export default function OrganizationsPage() {
     }
   }
 
+  const handleDeleteOrganization = async (orgId: string, orgName: string) => {
+    if (!confirm(`Tem certeza que deseja desativar a organização "${orgName}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/organizations/${orgId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Organização desativada com sucesso!')
+        loadOrganizations()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Erro ao deletar organização')
+      }
+    } catch (error) {
+      console.error('Erro ao deletar organização:', error)
+      toast.error('Erro ao deletar organização')
+    }
+  }
+
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
@@ -272,6 +295,7 @@ export default function OrganizationsPage() {
                           variant="ghost"
                           size="icon"
                           title="Excluir"
+                          onClick={() => handleDeleteOrganization(org.id, org.name)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
