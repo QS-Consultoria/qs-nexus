@@ -67,7 +67,7 @@ export const complexityEnum = pgEnum('complexity', ['simples', 'medio', 'complex
 export const modelProviderEnum = pgEnum('model_provider', ['openai', 'google'])
 
 // Document type enum for classification and schema configs
-export const documentTypeEnum = pgEnum('document_type', ['juridico', 'contabil', 'geral'])
+export const documentCategoryEnum = pgEnum('document_category', ['juridico', 'contabil', 'geral'])
 
 export const documentFiles = pgTable('document_files', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -96,7 +96,7 @@ export const classificationConfigs = pgTable('classification_configs', {
   organizationId: uuid('organization_id'),
   
   name: text('name').notNull(),
-  documentType: documentTypeEnum('document_type').notNull().default('geral'),
+  documentCategory: documentCategoryEnum('document_category').notNull().default('geral'),
   systemPrompt: text('system_prompt').notNull(),
   modelProvider: modelProviderEnum('model_provider').notNull(),
   modelName: text('model_name').notNull(),
@@ -116,7 +116,7 @@ export const templateSchemaConfigs = pgTable('template_schema_configs', {
   organizationId: uuid('organization_id'),
   
   name: text('name').notNull(),
-  documentType: documentTypeEnum('document_type').notNull().default('geral'),
+  documentCategory: documentCategoryEnum('document_category').notNull().default('geral'),
   fields: jsonb('fields').notNull(), // Array of field definitions
   isActive: boolean('is_active').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
