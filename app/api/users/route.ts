@@ -14,17 +14,10 @@ import { hasPermission } from '@/lib/auth/permissions'
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔐 [GET /api/users] Starting...')
     const session = await auth()
-    console.log('🔐 [GET /api/users] Session:', session ? 'EXISTS' : 'NULL')
-    console.log('🔐 [GET /api/users] User:', session?.user?.email, 'Role:', session?.user?.globalRole)
-    
     if (!session?.user) {
-      console.log('❌ [GET /api/users] No session - returning 401')
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
-    
-    console.log('✅ [GET /api/users] Session OK, proceeding...')
 
     // Verificar permissão (aceita usuários sem globalRole como viewer)
     const userRole = session.user.globalRole || 'viewer'
@@ -32,92 +25,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
-    // Parse query params
-    const { searchParams } = new URL(request.url)
-    const queryParams = {
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-      search: searchParams.get('search'),
-      organizationId: searchParams.get('organizationId'),
-      role: searchParams.get('role'),
-      status: searchParams.get('status') || 'all',
-    }
+    // Parse query params (com valores padrão seguros)
+    const page = 1
+    const limit = 100
 
-    const filters = listUsersSchema.parse(queryParams)
-
-    // Build query
-    const conditions = []
-
-    // Filtrar por status
-    if (filters.status === 'active') {
-      conditions.push(eq(ragUsers.isActive, true))
-    } else if (filters.status === 'inactive') {
-      conditions.push(eq(ragUsers.isActive, false))
-    }
-
-    // Filtrar por search
-    if (filters.search) {
-      conditions.push(
-        or(
-          ilike(ragUsers.name, `%${filters.search}%`),
-          ilike(ragUsers.email, `%${filters.search}%`)
-        )
-      )
-    }
-
-    // Filtrar por role global
-    if (filters.role) {
-      conditions.push(eq(ragUsers.globalRole, filters.role as any))
-    }
-
-    // Super admin vê todos, outros veem apenas da sua org
-    let usersList
-
-    if (userRole === 'super_admin') {
-      // Super admin vê todos
-      usersList = await db
-        .select({
-          id: ragUsers.id,
-          name: ragUsers.name,
-          email: ragUsers.email,
-          globalRole: ragUsers.globalRole,
-          isActive: ragUsers.isActive,
-          lastLoginAt: ragUsers.lastLoginAt,
-          createdAt: ragUsers.createdAt,
-        })
-        .from(ragUsers)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .limit(filters.limit)
-        .offset((filters.page - 1) * filters.limit)
-        .orderBy(ragUsers.createdAt)
-    } else {
-      // Outros veem apenas da sua org
-      if (!session.user.organizationId) {
-        return NextResponse.json({ users: [], total: 0, page: filters.page, limit: filters.limit })
-      }
-
-      usersList = await db
-        .selectDistinct({
-          id: ragUsers.id,
-          name: ragUsers.name,
-          email: ragUsers.email,
-          globalRole: ragUsers.globalRole,
-          isActive: ragUsers.isActive,
-          lastLoginAt: ragUsers.lastLoginAt,
-          createdAt: ragUsers.createdAt,
-        })
-        .from(ragUsers)
-        .innerJoin(organizationMembers, eq(ragUsers.id, organizationMembers.userId))
-        .where(
-          and(
-            eq(organizationMembers.organizationId, session.user.organizationId),
-            ...(conditions.length > 0 ? conditions : [])
-          )
-        )
-        .limit(filters.limit)
-        .offset((filters.page - 1) * filters.limit)
-        .orderBy(ragUsers.createdAt)
-    }
+    // Super admin vê todos
+    const usersList = await db
+      .select({
+        id: ragUsers.id,
+        name: ragUsers.name,
+        email: ragUsers.email,
+        globalRole: ragUsers.globalRole,
+        isActive: ragUsers.isActive,
+        lastLoginAt: ragUsers.lastLoginAt,
+        createdAt: ragUsers.createdAt,
+      })
+      .from(ragUsers)
+      .limit(limit)
+      .orderBy(ragUsers.createdAt)
 
     // Buscar organizações de cada usuário
     const usersWithOrgs = await Promise.all(
@@ -150,13 +75,12 @@ export async function GET(request: NextRequest) {
     const [{ count: total }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(ragUsers)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
 
     return NextResponse.json({
       users: usersWithOrgs,
       total: Number(total),
-      page: filters.page,
-      limit: filters.limit,
+      page,
+      limit,
     })
   } catch (error) {
     console.error('Error fetching users:', error)
