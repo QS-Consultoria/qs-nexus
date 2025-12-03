@@ -5,6 +5,7 @@ import * as spedSchema from './schema/sped'
 import * as workflowSchema from './schema/workflows'
 import * as organizationsSchema from './schema/organizations'
 import * as metadataSchema from './schema/metadata-schemas'
+import * as documentsSchema from './schema/documents'
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
@@ -20,6 +21,7 @@ const schema = {
   ...workflowSchema,
   ...organizationsSchema,
   ...metadataSchema,
+  ...documentsSchema,
 }
 
 // Validate DATABASE_URL after attempting to load

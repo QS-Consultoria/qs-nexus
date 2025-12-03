@@ -54,8 +54,7 @@ const navigationGroups = [
   {
     title: 'Dados',
     items: [
-      { name: 'Upload', href: '/upload', icon: Upload },
-      { name: 'Documentos Jurídicos', href: '/files', icon: FileText, description: 'Contratos e textos jurídicos' },
+      { name: 'Documentos', href: '/documentos', icon: FileText, description: 'PDFs, Word, Textos' },
       { name: 'Planilhas (CSV)', href: '/csv', icon: FileSpreadsheet, description: 'Planilhas de controle' },
       { name: 'SPED (Obrigações)', href: '/sped', icon: Database, description: 'ECD, ECF e EFD' },
       { name: 'Configurações de Dados', href: '/settings/data', icon: Settings },
