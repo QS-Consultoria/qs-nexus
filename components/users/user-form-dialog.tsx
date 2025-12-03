@@ -232,14 +232,15 @@ export function UserFormDialog({
               <div className="space-y-2">
                 <Label htmlFor="globalRole">Role Global (Opcional)</Label>
                 <Select
-                  value={globalRole}
-                  onValueChange={(value: GlobalRole) => setGlobalRole(value)}
+                  value={globalRole || undefined}
+                  onValueChange={(value: GlobalRole | '') => {
+                    setGlobalRole(value)
+                  }}
                 >
                   <SelectTrigger id="globalRole">
-                    <SelectValue placeholder="Selecione a role global" />
+                    <SelectValue placeholder="Nenhuma - deixe em branco" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
                     {availableGlobalRoles.map((role) => (
                       <SelectItem key={role} value={role}>
                         {roleLabels[role]}
