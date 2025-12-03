@@ -34,9 +34,11 @@ import {
   Filter,
   X,
   Search,
+  Upload,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
+import { DocumentUploadDialog } from '@/components/documents/document-upload-dialog'
 
 interface SpedFile {
   id: string
@@ -77,6 +79,7 @@ const STATUS_OPTIONS = [
 
 export default function SpedPage() {
   const { currentOrg } = useOrganization()
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   
   const [files, setFiles] = useState<SpedFile[]>([])
   const [stats, setStats] = useState<SpedStats | null>(null)
@@ -196,11 +199,9 @@ export default function SpedPage() {
             </Badge>
           )}
         </div>
-        <Button asChild>
-          <Link href="/upload?tab=sped">
-            <Database className="h-4 w-4 mr-2" />
-            Importar SPED
-          </Link>
+        <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!currentOrg}>
+          <Upload className="h-4 w-4 mr-2" />
+          Upload SPED
         </Button>
       </div>
 
@@ -455,6 +456,18 @@ export default function SpedPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Upload Dialog */}
+      <DocumentUploadDialog
+        open={isUploadDialogOpen}
+        onOpenChange={setIsUploadDialogOpen}
+        onSuccess={() => window.location.reload()}
+        documentType="sped"
+        acceptedFileTypes=".txt"
+        maxSizeMB={200}
+        title="Upload de Arquivos SPED"
+        description="Envie arquivos SPED (ECD, ECF, EFD) para processamento"
+      />
     </div>
   )
 }

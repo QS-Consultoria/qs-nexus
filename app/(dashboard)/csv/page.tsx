@@ -34,9 +34,11 @@ import {
   XCircle,
   Download,
   Eye,
+  Upload,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
+import { DocumentUploadDialog } from '@/components/documents/document-upload-dialog'
 
 interface CsvFile {
   id: string
@@ -76,6 +78,7 @@ export default function CsvPage() {
   const [files, setFiles] = useState<CsvFile[]>([])
   const [stats, setStats] = useState<CsvStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   
   // Filtros
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -172,7 +175,7 @@ export default function CsvPage() {
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="h-8 w-8 text-primary" />
             <div>
@@ -189,11 +192,9 @@ export default function CsvPage() {
             </Badge>
           )}
         </div>
-        <Button asChild>
-          <Link href="/upload?tab=csv">
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Importar CSV
-          </Link>
+        <Button onClick={() => setIsUploadDialogOpen(true)} disabled={!currentOrg}>
+          <Upload className="h-4 w-4 mr-2" />
+          Upload CSV
         </Button>
       </div>
 
@@ -412,6 +413,18 @@ export default function CsvPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Upload Dialog */}
+      <DocumentUploadDialog
+        open={isUploadDialogOpen}
+        onOpenChange={setIsUploadDialogOpen}
+        onSuccess={() => window.location.reload()}
+        documentType="csv"
+        acceptedFileTypes=".csv,.xlsx,.xls"
+        maxSizeMB={100}
+        title="Upload de Planilhas CSV"
+        description="Envie arquivos CSV ou Excel para processamento"
+      />
     </div>
   )
 }

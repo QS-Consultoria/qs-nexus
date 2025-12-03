@@ -100,8 +100,34 @@ export default function DocumentosPage() {
   }
 
   const handleDownload = async (doc: Document) => {
-    toast.success(`Download de ${doc.fileName} iniciado`)
-    // TODO: Implementar download real
+    try {
+      const response = await fetch(`/api/documents/${doc.id}/download`)
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao fazer download')
+      }
+
+      // Criar blob do arquivo
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      
+      // Criar link temporário e disparar download
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.originalFileName || doc.fileName
+      document.body.appendChild(a)
+      a.click()
+      
+      // Limpar
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success(`Download de ${doc.fileName} iniciado`)
+    } catch (error: any) {
+      console.error('Download error:', error)
+      toast.error(error.message || 'Erro ao fazer download')
+    }
   }
 
   const handleDelete = async (doc: Document) => {
@@ -124,8 +150,22 @@ export default function DocumentosPage() {
   }
 
   const handleReprocess = async (doc: Document) => {
-    toast.success('Reprocessamento iniciado...')
-    // TODO: Implementar reprocessamento
+    try {
+      const response = await fetch(`/api/documents/${doc.id}/process`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        toast.success('Processamento iniciado! O documento será processado em background.')
+        loadDocuments() // Recarregar lista
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Erro ao iniciar processamento')
+      }
+    } catch (error) {
+      console.error('Reprocess error:', error)
+      toast.error('Erro ao iniciar processamento')
+    }
   }
 
   return (
