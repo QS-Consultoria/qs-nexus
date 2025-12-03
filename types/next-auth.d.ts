@@ -12,6 +12,7 @@ declare module 'next-auth' {
       organizationId: string | null
       organizationRole: OrgRole | null
       organizationName: string | null
+      qsConsultoriaRole: OrgRole | null
     }
   }
 
@@ -24,6 +25,7 @@ declare module 'next-auth' {
     organizationId?: string | null
     organizationRole?: OrgRole | null
     organizationName?: string | null
+    qsConsultoriaRole?: OrgRole | null
   }
 }
 
@@ -37,5 +39,6 @@ declare module 'next-auth/jwt' {
     organizationId?: string | null
     organizationRole?: OrgRole | null
     organizationName?: string | null
+    qsConsultoriaRole?: OrgRole | null
   }
 }

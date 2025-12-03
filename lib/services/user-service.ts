@@ -34,7 +34,42 @@ export interface UserWithOrganizations {
 }
 
 /**
+ * Verifica se usuário pertence à QS Consultoria e retorna seu role lá
+ */
+export async function getQSConsultoriaRole(userId: string): Promise<OrgRole | null> {
+  try {
+    const [qsOrg] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, 'qs-consultoria'))
+      .limit(1)
+
+    if (!qsOrg) {
+      return null
+    }
+
+    const [membership] = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, qsOrg.id),
+          eq(organizationMembers.isActive, true)
+        )
+      )
+      .limit(1)
+
+    return membership?.role || null
+  } catch (error) {
+    console.error('Error getting QS Consultoria role:', error)
+    return null
+  }
+}
+
+/**
  * Busca usuário com todas as suas organizações e roles
+ * Se usuário pertence à QS Consultoria, usa o role da QS como referência
  */
 export async function getUserWithOrganizations(
   userId: string

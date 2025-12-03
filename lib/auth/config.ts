@@ -4,7 +4,7 @@ import { db } from '@/lib/db/index'
 import { ragUsers } from '@/lib/db/schema/rag-users'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-import { getUserWithOrganizations, updateLastLogin } from '@/lib/services/user-service'
+import { getUserWithOrganizations, updateLastLogin, getQSConsultoriaRole } from '@/lib/services/user-service'
 import type { GlobalRole, OrgRole } from '@/lib/auth/permissions'
 
 const authConfig = NextAuth({
@@ -68,12 +68,23 @@ const authConfig = NextAuth({
             token.globalRole = userWithOrgs.globalRole
             token.isActive = userWithOrgs.isActive
             
+            // 🔑 REGRA: Verificar se usuário pertence à QS Consultoria
+            const qsRole = await getQSConsultoriaRole(user.id as string)
+            token.qsConsultoriaRole = qsRole
+            
             // Pegar primeira organização ativa como padrão
             const defaultOrg = userWithOrgs.organizations.find(o => o.isActive)
             if (defaultOrg) {
               token.organizationId = defaultOrg.id
-              token.organizationRole = defaultOrg.role
               token.organizationName = defaultOrg.name
+              
+              // 🎯 Se pertence à QS, usa o role da QS em TODAS as orgs
+              if (qsRole) {
+                token.organizationRole = qsRole
+                console.log(`✅ User ${user.email} from QS Consultoria - using QS role: ${qsRole}`)
+              } else {
+                token.organizationRole = defaultOrg.role
+              }
             }
             
             // Atualizar último login
@@ -85,6 +96,7 @@ const authConfig = NextAuth({
             token.organizationId = null
             token.organizationRole = null
             token.organizationName = null
+            token.qsConsultoriaRole = null
           }
         } catch (error) {
           console.error('Error fetching user organizations:', error)
@@ -94,6 +106,7 @@ const authConfig = NextAuth({
           token.organizationId = null
           token.organizationRole = null
           token.organizationName = null
+          token.qsConsultoriaRole = null
         }
       }
       return token
@@ -109,6 +122,7 @@ const authConfig = NextAuth({
         user.organizationId = token.organizationId as string | null
         user.organizationRole = token.organizationRole as OrgRole | null
         user.organizationName = token.organizationName as string | null
+        user.qsConsultoriaRole = token.qsConsultoriaRole as OrgRole | null
       }
       return session
     },
