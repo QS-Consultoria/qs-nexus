@@ -321,24 +321,34 @@ export default function OrganizationsPage() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Desativar (Soft Delete) - Pode ser reativada depois"
-                          onClick={() => handleSoftDeleteOrganization(org.id, org.name)}
-                          className="text-amber-600 hover:text-amber-700 dark:text-amber-500"
-                        >
-                          <Ban className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Deletar Permanentemente (Hard Delete) - NÃO pode ser desfeito!"
-                          onClick={() => handleHardDeleteOrganization(org.id, org.name)}
-                          className="text-destructive hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        {/* Esconder botões de delete para QS Consultoria */}
+                        {org.slug !== 'qs-consultoria' && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Desativar (Soft Delete) - Pode ser reativada depois"
+                              onClick={() => handleSoftDeleteOrganization(org.id, org.name)}
+                              className="text-amber-600 hover:text-amber-700 dark:text-amber-500"
+                            >
+                              <Ban className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Deletar Permanentemente (Hard Delete) - NÃO pode ser desfeito!"
+                              onClick={() => handleHardDeleteOrganization(org.id, org.name)}
+                              className="text-destructive hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        {org.slug === 'qs-consultoria' && (
+                          <Badge variant="outline" className="text-xs text-blue-600 dark:text-blue-400 border-blue-300">
+                            🔒 Protegida
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

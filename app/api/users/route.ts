@@ -19,8 +19,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    // Verificar permissão
-    if (!hasPermission(session.user.globalRole, 'users.view')) {
+    // Verificar permissão (aceita usuários sem globalRole como viewer)
+    const userRole = session.user.globalRole || 'viewer'
+    if (!hasPermission(userRole as any, 'users.view')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     // Super admin vê todos, outros veem apenas da sua org
     let usersList
 
-    if (session.user.globalRole === 'super_admin') {
+    if (userRole === 'super_admin') {
       // Super admin vê todos
       usersList = await db
         .select({
