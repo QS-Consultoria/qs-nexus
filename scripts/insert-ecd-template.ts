@@ -181,6 +181,7 @@ async function insertECDTemplate() {
       const account = accountRecords.find(a => a.accountCode === bal.accountCode)
       
       await db.insert(accountBalances).values({
+        organizationId: org.id,
         spedFileId: spedFile.id,
         chartOfAccountId: account?.id || null,
         accountCode: bal.accountCode,
@@ -189,8 +190,8 @@ async function insertECDTemplate() {
         debitTotal: bal.debit.toString(),
         creditTotal: bal.credit.toString(),
         finalBalance: bal.final.toString(),
-        initialBalanceIndicator: bal.initialInd,
-        finalBalanceIndicator: bal.finalInd,
+        initialBalanceIndicator: bal.initialInd as 'D' | 'C',
+        finalBalanceIndicator: bal.finalInd as 'D' | 'C',
       })
     }
 
