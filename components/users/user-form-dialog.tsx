@@ -228,7 +228,7 @@ export function UserFormDialog({
               </Select>
             </div>
 
-            {(isSuperAdmin || isQSConsultoria) && organizationId && (
+            {isSuperAdmin && organizationId && (
               <div className="space-y-2">
                 <Label htmlFor="globalRole">Role Global (Opcional)</Label>
                 <Select
