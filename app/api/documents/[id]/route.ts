@@ -57,7 +57,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    if (!hasPermission(session.user.globalRole || 'viewer', 'documents.edit')) {
+    if (!hasPermission(session.user.globalRole || 'viewer', 'data.upload')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
@@ -114,7 +114,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    if (!hasPermission(session.user.globalRole || 'viewer', 'documents.delete')) {
+    if (!hasPermission(session.user.globalRole || 'viewer', 'data.delete')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 

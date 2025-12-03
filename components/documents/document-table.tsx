@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 
-interface Document {
+interface DocumentItem {
   id: string
   fileName: string
   fileSize: number
@@ -24,15 +24,19 @@ interface Document {
   uploadedBy?: { name: string }
   createdAt: string
   processedAt?: string
+  originalFileName?: string
+  title?: string
+  description?: string
+  tags?: string[]
 }
 
 interface DocumentTableProps {
-  documents: Document[]
+  documents: DocumentItem[]
   isLoading: boolean
-  onEdit?: (doc: Document) => void
-  onDelete?: (doc: Document) => void
-  onDownload?: (doc: Document) => void
-  onReprocess?: (doc: Document) => void
+  onEdit?: (doc: DocumentItem) => void
+  onDelete?: (doc: DocumentItem) => void
+  onDownload?: (doc: DocumentItem) => void
+  onReprocess?: (doc: DocumentItem) => void
   showActions?: boolean
 }
 

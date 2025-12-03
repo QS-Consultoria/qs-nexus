@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    if (!hasPermission(session.user.globalRole || 'viewer', 'documents.view')) {
+    if (!hasPermission(session.user.globalRole || 'viewer', 'data.view')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 

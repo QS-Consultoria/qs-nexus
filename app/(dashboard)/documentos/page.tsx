@@ -14,12 +14,15 @@ import { DocumentStatsCards } from '@/components/documents/document-stats-cards'
 interface Document {
   id: string
   fileName: string
-  originalFileName: string
+  originalFileName?: string
   fileSize: number
   status: string
-  documentType: string
+  documentType?: string
   createdAt: string
   uploadedBy?: { name: string }
+  title?: string
+  description?: string
+  tags?: string[]
 }
 
 const DOCUMENT_TYPES = [
@@ -121,7 +124,7 @@ export default function DocumentosPage() {
   }
 
   const handleReprocess = async (doc: Document) => {
-    toast.info('Reprocessamento iniciado...')
+    toast.success('Reprocessamento iniciado...')
     // TODO: Implementar reprocessamento
   }
 

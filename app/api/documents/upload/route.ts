@@ -8,12 +8,6 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { calculateFileHash, getDocumentType, getMimeType } from '@/lib/utils/file-upload'
 import { getUploadPath, sanitizeFileName } from '@/lib/utils/storage-path'
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
-
 /**
  * POST /api/documents/upload
  * Upload de documentos gerais (PDF, DOCX, TXT)
@@ -26,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(session.user.globalRole || 'viewer', 'documents.create')) {
+    if (!hasPermission(session.user.globalRole || 'viewer', 'data.upload')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
