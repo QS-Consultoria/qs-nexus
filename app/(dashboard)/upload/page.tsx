@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'react-hot-toast'
+import { useOrganization } from '@/lib/contexts/organization-context'
 import {
   Upload,
   FileSpreadsheet,
@@ -28,6 +29,7 @@ interface IngestResult {
 }
 
 export default function UploadPage() {
+  const { currentOrg } = useOrganization()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -50,6 +52,11 @@ export default function UploadPage() {
       return
     }
 
+    if (!currentOrg?.id) {
+      toast.error('Nenhuma organização selecionada')
+      return
+    }
+
     setIsUploading(true)
 
     try {
@@ -57,36 +64,45 @@ export default function UploadPage() {
       selectedFiles.forEach(file => {
         formData.append('files', file)
       })
+      // ✅ ADICIONA organizationId obrigatório
+      formData.append('organizationId', currentOrg.id)
 
-      const uploadResponse = await fetch('/api/upload', {
+      const uploadResponse = await fetch('/api/documents/upload', {
         method: 'POST',
         body: formData,
       })
 
       if (!uploadResponse.ok) {
-        throw new Error('Erro ao fazer upload')
+        const errorData = await uploadResponse.json()
+        throw new Error(errorData.error || 'Erro ao fazer upload')
       }
 
       const uploadData = await uploadResponse.json()
-      toast.success(`${uploadData.files.length} arquivo(s) enviado(s)`)
+      toast.success(uploadData.message || `${uploadData.documents.length} arquivo(s) enviado(s)`)
 
+      // Iniciar processamento automático
       setIsProcessing(true)
-      const processResponse = await fetch('/api/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: uploadData.files }),
-      })
-
-      if (!processResponse.ok) {
-        throw new Error('Erro ao iniciar processamento')
+      const documentIds = uploadData.documents.map((doc: any) => doc.id)
+      
+      // Processar cada documento
+      for (const docId of documentIds) {
+        try {
+          await fetch(`/api/documents/${docId}/process`, {
+            method: 'POST',
+          })
+        } catch (err) {
+          console.error(`Erro ao processar documento ${docId}:`, err)
+        }
       }
-
-      const processData = await processResponse.json()
-      setJobId(processData.jobId)
-      toast.success('Processamento iniciado')
+      
+      toast.success('Processamento iniciado para todos os arquivos')
+      
+      // Limpar seleção
+      setSelectedFiles([])
+      
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error('Erro ao processar arquivos')
+      toast.error(error instanceof Error ? error.message : 'Erro ao processar arquivos')
       setIsProcessing(false)
     } finally {
       setIsUploading(false)
