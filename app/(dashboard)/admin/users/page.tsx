@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Users, UserPlus, Search, Edit2, Building2, Shield, CheckCircle2, XCircle, Ban, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { RoleBadge } from '@/components/users/role-badge'
-import { UserFormDialogV2 as UserFormDialog } from '@/components/users/user-form-dialog-v2'
+import { UserFormSimple as UserFormDialog } from '@/components/users/user-form-simple'
 import { UserOrgManagerDialog } from '@/components/users/user-org-manager-dialog'
 import { useSession } from 'next-auth/react'
 import { formatDistanceToNow } from 'date-fns'
@@ -385,9 +385,7 @@ export default function UsersPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSuccess={loadData}
-        user={editingUser}
         organizations={organizations}
-        currentUserGlobalRole={((session?.user as any)?.globalRole as GlobalRole) || 'viewer'}
       />
 
       <UserOrgManagerDialog
