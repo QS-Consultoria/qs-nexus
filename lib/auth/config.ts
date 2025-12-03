@@ -55,7 +55,7 @@ const authConfig = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
         token.email = user.email
@@ -91,6 +91,7 @@ const authConfig = NextAuth({
             await updateLastLogin(user.id as string)
           } else {
             // Fallback: se não encontrar org, define valores padrão
+            console.warn('⚠️ UserWithOrgs é null! Usando fallback viewer')
             token.globalRole = 'viewer'
             token.isActive = true
             token.organizationId = null
@@ -99,7 +100,7 @@ const authConfig = NextAuth({
             token.qsConsultoriaRole = null
           }
         } catch (error) {
-          console.error('Error fetching user organizations:', error)
+          console.error('❌ Error fetching user organizations:', error)
           // Fallback em caso de erro
           token.globalRole = 'viewer'
           token.isActive = true
@@ -109,6 +110,25 @@ const authConfig = NextAuth({
           token.qsConsultoriaRole = null
         }
       }
+      
+      // 🔄 ATUALIZAR token em toda requisição para pegar mudanças no DB
+      if (token.id && trigger !== 'signIn') {
+        try {
+          const userWithOrgs = await getUserWithOrganizations(token.id as string)
+          if (userWithOrgs) {
+            const currentGlobalRole = token.globalRole
+            const newGlobalRole = userWithOrgs.globalRole || 'viewer'
+            
+            if (currentGlobalRole !== newGlobalRole) {
+              console.log(`🔄 GlobalRole mudou de ${currentGlobalRole} → ${newGlobalRole} para ${token.email}`)
+              token.globalRole = newGlobalRole
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error updating token:', error)
+        }
+      }
+      
       return token
     },
     async session({ session, token }) {

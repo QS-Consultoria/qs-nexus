@@ -33,6 +33,7 @@
     "db:migrate": "tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:migrate-template-schema": "tsx scripts/migrate-template-schema.ts",
+    "promote-admin": "tsx scripts/promote-to-super-admin.ts",
     "db:remove-old-columns": "tsx scripts/remove-old-template-columns.ts",
     "db:seed": "tsx lib/db/seed.ts"
   },
