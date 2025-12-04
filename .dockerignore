@@ -1,22 +1,69 @@
+# Dependencies
 node_modules
 npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build artifacts
 .next
-.env.local
-.env*.local
-.DS_Store
-*.log
-.git
-.gitignore
-README.md
-.vscode
-.idea
-coverage
-.nyc_output
+out
 dist
 build
-*.md
-!README.md
-.cache
-.turbo
-terminals
 
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+.cursor
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+docs/
+
+# Data files
+data/
+uploads/
+terminals/
+
+# Environment
+.env
+.env.local
+.env*.local
+.env.heroku
+
+# Testing
+.playwright-mcp/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+dump.rdb
+
+# Logs
+logs
+*.log
+
+# CSV/Excel
+*.csv
+*.xlsx
+
+# TypeScript
+*.tsbuildinfo

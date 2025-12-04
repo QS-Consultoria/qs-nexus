@@ -79,3 +79,14 @@ temp/
 
 # Redis dump
 dump.rdb
+
+# Data files (processados e temporários)
+data/
+uploads/
+
+# CSV e Excel files
+*.csv
+*.xlsx
+
+# Screenshots e testes de browser
+.playwright-mcp/

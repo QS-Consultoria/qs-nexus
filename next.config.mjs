@@ -3,6 +3,7 @@ const nextConfig = {
   // Configurações de produção
   poweredByHeader: false,
   compress: true,
+  output: 'standalone', // Otimiza build para Docker
   
   // Variáveis de ambiente públicas
   env: {
