@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copiar apenas os arquivos necessários para o build
 COPY package.json package-lock.json ./
 COPY tsconfig.json next.config.mjs postcss.config.js tailwind.config.js ./
-COPY components.json ./
+COPY components.json drizzle.config.ts ./
 COPY app ./app
 COPY components ./components
 COPY lib ./lib
