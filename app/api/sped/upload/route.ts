@@ -86,6 +86,27 @@ export async function POST(request: NextRequest) {
           .returning()
 
         uploadedFiles.push(spedFile)
+
+        // TODO: PROCESSAMENTO EM BACKGROUND
+        // Atualmente, o arquivo fica com status 'pending' indefinidamente.
+        // É necessário implementar um worker/job queue para:
+        // 1. Detectar tipo de SPED (ECD, ECF, EFD_ICMS_IPI, etc) pela estrutura do arquivo
+        // 2. Parsear registros SPED (0000, C050, I150, I200, etc)
+        // 3. Extrair CNPJ e nome da empresa do registro 0000
+        // 4. Extrair período fiscal (data início e fim)
+        // 5. Popular tabelas: chartOfAccounts, journalEntries, accountBalances
+        // 6. Atualizar status para 'processing' → 'completed' ou 'failed'
+        // 
+        // Opções de implementação:
+        // - BullMQ + Redis (ideal para produção)
+        // - Vercel Cron + Database Queue (se usar Vercel)
+        // - Heroku Worker dyno + PostgreSQL queue
+        //
+        // Libs recomendadas para parsing SPED:
+        // - python-sped (via Python microservice)
+        // - sped-fiscal-node (se existir)
+        // - Parser customizado baseado na documentação oficial SPED
+        
       } catch (error) {
         console.error(`Error uploading SPED file ${file.name}:`, error)
       }
@@ -96,8 +117,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `${uploadedFiles.length} arquivo(s) SPED enviado(s) com sucesso`,
+      message: `${uploadedFiles.length} arquivo(s) SPED enviado(s) com sucesso. Processamento em fila.`,
       files: uploadedFiles,
+      warning: 'Processamento em background ainda não implementado. Arquivos ficarão com status "pending".',
     }, { status: 201 })
   } catch (error) {
     console.error('SPED upload error:', error)
