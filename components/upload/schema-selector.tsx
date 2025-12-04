@@ -22,6 +22,7 @@ interface DocumentSchema {
   }>
   enableRAG: boolean
   isDefaultForBaseType: boolean
+  isActive: boolean
 }
 
 interface Props {
