@@ -1,5 +1,4 @@
 # QS Nexus - Production Dockerfile para Heroku
-# syntax=docker/dockerfile:1.4
 
 FROM node:20-alpine AS base
 
@@ -16,9 +15,8 @@ FROM base AS deps
 # Copiar apenas package files para cache otimizado
 COPY package.json package-lock.json ./
 
-# Usar cache do npm para acelerar builds
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+# Instalar dependências
+RUN npm ci --prefer-offline --no-audit
 
 # ================================
 # Builder stage
