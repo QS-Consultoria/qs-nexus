@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@/lib/auth/config'
 import { createPhysicalTable } from '@/lib/services/schema-manager'
 
 /**
@@ -11,11 +11,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const orgId = session.user.organizationId
     
     const result = await createPhysicalTable(params.id, orgId)
     

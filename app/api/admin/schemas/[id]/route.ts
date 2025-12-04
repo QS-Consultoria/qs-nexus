@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@/lib/auth/config'
 import { getSchema, updateSchema, deleteSchema } from '@/lib/services/schema-manager'
 import { DocumentSchemaField } from '@/lib/db/schema/document-schemas'
 
@@ -12,11 +12,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const orgId = session.user.organizationId
     
     const schema = await getSchema(params.id, orgId)
     
@@ -43,11 +45,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const orgId = session.user.organizationId
     
     const body = await request.json()
     
@@ -88,11 +92,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const orgId = session.user.organizationId
     
     const { searchParams } = new URL(request.url)
     const dropTable = searchParams.get('dropTable') === 'true'

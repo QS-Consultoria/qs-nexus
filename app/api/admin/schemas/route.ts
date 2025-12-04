@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@/lib/auth/config'
 import { listSchemas, createSchema } from '@/lib/services/schema-manager'
 import { DocumentSchemaField } from '@/lib/db/schema/document-schemas'
 
@@ -9,11 +9,13 @@ import { DocumentSchemaField } from '@/lib/db/schema/document-schemas'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const orgId = session.user.organizationId
     
     const { searchParams } = new URL(request.url)
     const baseType = searchParams.get('baseType') as 'document' | 'sped' | 'csv' | null
@@ -36,11 +38,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, orgId } = await auth()
+    const session = await auth()
     
-    if (!userId || !orgId) {
+    if (!session?.user?.organizationId || !session.user.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    
+    const userId = session.user.id
+    const orgId = session.user.organizationId
     
     const body = await request.json()
     
