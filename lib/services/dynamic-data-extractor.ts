@@ -38,7 +38,7 @@ export async function insertIntoCustomTable(
     throw new Error(`Schema ${schemaId} não encontrado`)
   }
   
-  if (!schema.tableCreated) {
+  if (!schema.sqlTableCreated) {
     throw new Error(`Tabela ${schema.tableName} ainda não foi criada. Execute a criação da tabela primeiro.`)
   }
   

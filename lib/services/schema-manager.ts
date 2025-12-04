@@ -121,10 +121,10 @@ export async function createSchema(data: {
       baseType: data.baseType,
       category: data.category,
       fields: data.fields as any,
-      createTableSql,
-      tableCreated: false,
+      sqlCreateStatement: createTableSql,
+      sqlTableCreated: false,
       classificationProfileId: data.classificationProfileId,
-      enableRag: data.enableRag ?? true,
+      enableRAG: data.enableRag ?? true,
       createdBy: data.createdBy,
     })
     .returning()
@@ -142,7 +142,7 @@ export async function createPhysicalTable(schemaId: string, organizationId: stri
     throw new Error('Schema não encontrado')
   }
   
-  if (schema.tableCreated) {
+  if (schema.sqlTableCreated) {
     throw new Error('Tabela já foi criada')
   }
   
@@ -158,8 +158,8 @@ export async function createPhysicalTable(schemaId: string, organizationId: stri
     await db
       .update(customSchemas)
       .set({
-        tableCreated: true,
-        tableCreatedAt: new Date(),
+        sqlTableCreated: true,
+        sqlTableCreatedAt: new Date(),
         updatedAt: new Date()
       })
       .where(eq(customSchemas.id, schemaId))
@@ -192,7 +192,7 @@ export async function updateSchema(
   }
   
   // Não permitir edição de campos se tabela já foi criada
-  if (schema.tableCreated && data.fields) {
+  if (schema.sqlTableCreated && data.fields) {
     throw new Error('Não é possível alterar campos de um schema cuja tabela já foi criada')
   }
   
@@ -239,7 +239,7 @@ export async function deleteSchema(
   }
   
   // Deletar tabela física se solicitado
-  if (dropTable && schema.tableCreated) {
+  if (dropTable && schema.sqlTableCreated) {
     const dropSQL = generateDropTableSQL(schema.tableName)
     await db.execute(sql.raw(dropSQL))
   }
@@ -249,7 +249,7 @@ export async function deleteSchema(
     .delete(customSchemas)
     .where(eq(customSchemas.id, schemaId))
   
-  return { success: true, tableDropped: dropTable && schema.tableCreated }
+  return { success: true, tableDropped: dropTable && schema.sqlTableCreated }
 }
 
 /**
@@ -269,7 +269,7 @@ export async function listCreatedTables(organizationId: string) {
     .where(
       and(
         eq(customSchemas.organizationId, organizationId),
-        eq(customSchemas.tableCreated, true)
+        eq(customSchemas.sqlTableCreated, true)
       )
     )
     .orderBy(customSchemas.name)
