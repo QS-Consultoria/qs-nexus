@@ -171,7 +171,7 @@ export async function getCustomTableRecord(
 ) {
   const schema = await getSchema(schemaId, organizationId)
   
-  if (!schema || !schema.tableCreated) {
+  if (!schema || !schema.sqlTableCreated) {
     throw new Error('Schema ou tabela não encontrada')
   }
   
@@ -197,7 +197,7 @@ export async function updateCustomTableRecord(
 ) {
   const schema = await getSchema(schemaId, organizationId)
   
-  if (!schema || !schema.tableCreated) {
+  if (!schema || !schema.sqlTableCreated) {
     throw new Error('Schema ou tabela não encontrada')
   }
   
@@ -247,7 +247,7 @@ export async function deleteCustomTableRecord(
 ) {
   const schema = await getSchema(schemaId, organizationId)
   
-  if (!schema || !schema.tableCreated) {
+  if (!schema || !schema.sqlTableCreated) {
     throw new Error('Schema ou tabela não encontrada')
   }
   
