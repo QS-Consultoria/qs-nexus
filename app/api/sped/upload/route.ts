@@ -7,6 +7,7 @@ import { join } from 'path'
 import { hasPermission } from '@/lib/auth/permissions'
 import { calculateFileHash } from '@/lib/utils/file-upload'
 import { getUploadPath, sanitizeFileName } from '@/lib/utils/storage-path'
+import { addSpedProcessingJob } from '@/lib/queue/sped-queue'
 
 /**
  * POST /api/sped/upload
@@ -87,25 +88,20 @@ export async function POST(request: NextRequest) {
 
         uploadedFiles.push(spedFile)
 
-        // TODO: PROCESSAMENTO EM BACKGROUND
-        // Atualmente, o arquivo fica com status 'pending' indefinidamente.
-        // É necessário implementar um worker/job queue para:
-        // 1. Detectar tipo de SPED (ECD, ECF, EFD_ICMS_IPI, etc) pela estrutura do arquivo
-        // 2. Parsear registros SPED (0000, C050, I150, I200, etc)
-        // 3. Extrair CNPJ e nome da empresa do registro 0000
-        // 4. Extrair período fiscal (data início e fim)
-        // 5. Popular tabelas: chartOfAccounts, journalEntries, accountBalances
-        // 6. Atualizar status para 'processing' → 'completed' ou 'failed'
-        // 
-        // Opções de implementação:
-        // - BullMQ + Redis (ideal para produção)
-        // - Vercel Cron + Database Queue (se usar Vercel)
-        // - Heroku Worker dyno + PostgreSQL queue
-        //
-        // Libs recomendadas para parsing SPED:
-        // - python-sped (via Python microservice)
-        // - sped-fiscal-node (se existir)
-        // - Parser customizado baseado na documentação oficial SPED
+        // Adicionar job na fila de processamento
+        try {
+          await addSpedProcessingJob({
+            spedFileId: spedFile.id,
+            filePath: uploadPath,
+            fileName: file.name,
+            organizationId,
+          })
+          console.log(`✅ Job added to queue for ${file.name}`)
+        } catch (queueError: any) {
+          console.error(`⚠️  Failed to add job to queue: ${queueError.message}`)
+          console.error(`   File uploaded but will need manual processing`)
+          // Arquivo foi salvo, mas não foi para a fila - admin pode reprocessar manualmente
+        }
         
       } catch (error) {
         console.error(`Error uploading SPED file ${file.name}:`, error)
@@ -117,9 +113,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `${uploadedFiles.length} arquivo(s) SPED enviado(s) com sucesso. Processamento em fila.`,
+      message: `${uploadedFiles.length} arquivo(s) SPED enviado(s) com sucesso`,
       files: uploadedFiles,
-      warning: 'Processamento em background ainda não implementado. Arquivos ficarão com status "pending".',
+      info: 'Processamento iniciado em background. Acompanhe o status na listagem.',
     }, { status: 201 })
   } catch (error) {
     console.error('SPED upload error:', error)
