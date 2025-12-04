@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       baseType,
       category,
       fields,
-      classificationProfileId,
       enableRag
     } = body
     
@@ -91,7 +90,6 @@ export async function POST(request: NextRequest) {
       baseType,
       category,
       fields: fields as DocumentSchemaField[],
-      classificationProfileId,
       enableRag,
       createdBy: userId
     })

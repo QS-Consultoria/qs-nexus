@@ -154,7 +154,7 @@ export async function createPhysicalTable(schemaId: string, organizationId: stri
     throw new Error('Tabela já foi criada')
   }
   
-  if (!schema.createTableSql) {
+  if (!schema.sqlCreateStatement) {
     throw new Error('SQL de criação não foi gerado')
   }
   
@@ -204,6 +204,11 @@ export async function updateSchema(
   }
   
   // Validar campos se fornecidos
+  const updateData: any = {
+    ...data,
+    updatedAt: new Date()
+  }
+  
   if (data.fields) {
     const validation = validateFields(data.fields)
     if (!validation.valid) {
@@ -217,15 +222,12 @@ export async function updateSchema(
       organizationId
     )
     
-    data = { ...data, createTableSql: createTableSql as any }
+    updateData.sqlCreateStatement = createTableSql
   }
   
   const [updated] = await db
     .update(customSchemas)
-    .set({
-      ...data,
-      updatedAt: new Date()
-    })
+    .set(updateData)
     .where(eq(customSchemas.id, schemaId))
     .returning()
   
@@ -269,7 +271,7 @@ export async function listCreatedTables(organizationId: string) {
       name: customSchemas.name,
       tableName: customSchemas.tableName,
       baseType: customSchemas.baseType,
-      tableCreated: customSchemas.tableCreated,
+      tableCreated: customSchemas.sqlTableCreated,
       createdAt: customSchemas.createdAt
     })
     .from(customSchemas)

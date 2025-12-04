@@ -1,10 +1,10 @@
-import { DocumentSchemaField, RESERVED_FIELD_NAMES, SYSTEM_COLUMNS } from '../db/schema/document-schemas'
+import { DocumentSchemaField } from '../db/schema/document-schemas'
 
 // Alias para compatibilidade com código existente
 type FieldDefinition = DocumentSchemaField
 
 // Colunas obrigatórias do sistema (sempre incluídas em tabelas dinâmicas)
-const SYSTEM_COLUMNS_LIST = [
+export const SYSTEM_COLUMNS = [
   'id',
   'organization_id',
   'document_id',
@@ -21,8 +21,8 @@ const SYSTEM_COLUMNS_LIST = [
 ] as const
 
 // Nomes reservados
-const RESERVED_FIELD_NAMES_SET = new Set([
-  ...SYSTEM_COLUMNS_LIST,
+export const RESERVED_FIELD_NAMES = new Set([
+  ...SYSTEM_COLUMNS,
   // SQL keywords
   'select', 'insert', 'update', 'delete', 'drop', 'create', 'alter',
   'table', 'index', 'view', 'schema', 'database', 'user', 'role',
@@ -35,8 +35,6 @@ const RESERVED_FIELD_NAMES_SET = new Set([
   'only', 'or', 'primary', 'references', 'returning', 'then', 'to', 'true',
   'union', 'unique', 'when', 'with'
 ])
-
-export { SYSTEM_COLUMNS_LIST as SYSTEM_COLUMNS, RESERVED_FIELD_NAMES_SET as RESERVED_FIELD_NAMES }
 
 /**
  * Serviço para gerar CREATE TABLE SQL a partir de schemas dinâmicos
@@ -96,7 +94,7 @@ export function validateFieldName(fieldName: string): { valid: boolean; error?: 
   }
   
   // Verificar se é nome reservado
-  if (RESERVED_FIELD_NAMES_SET.has(fieldName.toLowerCase())) {
+  if (RESERVED_FIELD_NAMES.has(fieldName.toLowerCase())) {
     return {
       valid: false,
       error: `"${fieldName}" é um nome reservado e não pode ser usado`

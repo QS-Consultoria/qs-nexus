@@ -59,7 +59,6 @@ export async function PATCH(
       name,
       description,
       fields,
-      classificationProfileId,
       enableRag,
       isActive
     } = body
@@ -68,7 +67,6 @@ export async function PATCH(
       name,
       description,
       fields: fields as DocumentSchemaField[] | undefined,
-      classificationProfileId,
       enableRag,
       isActive
     })
