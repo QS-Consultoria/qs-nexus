@@ -207,7 +207,7 @@ export default function SpedPage() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Arquivos</CardTitle>
@@ -216,16 +216,6 @@ export default function SpedPage() {
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalFiles}</div>
               <p className="text-xs text-muted-foreground">importados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Empresas</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-              <p className="text-xs text-muted-foreground">CNPJs únicos</p>
             </CardContent>
           </Card>
           <Card>
@@ -381,13 +371,12 @@ export default function SpedPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Arquivo</TableHead>
-                    <TableHead>Empresa</TableHead>
                     <TableHead>CNPJ</TableHead>
                     <TableHead>Período</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Registros</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -396,14 +385,14 @@ export default function SpedPage() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="truncate max-w-[200px]" title={file.fileName}>
-                            {file.fileName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="truncate max-w-[200px]" title={file.companyName}>
-                          {file.companyName}
+                          <div className="min-w-0">
+                            <p className="truncate max-w-[200px]" title={file.fileName}>
+                              {file.fileName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[200px]" title={file.companyName}>
+                              {file.companyName}
+                            </p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">
