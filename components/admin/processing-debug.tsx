@@ -298,9 +298,9 @@ export function ProcessingDebug({ documentId }: ProcessingDebugProps) {
                 <h4 className="font-semibold text-sm mb-2">Testar Busca Vetorial</h4>
                 <code className="text-xs block bg-muted p-3 rounded overflow-x-auto">
                   SELECT chunk_index, content,<br />
-                  &nbsp;&nbsp;embedding {'<='}>= '[...]' as distance<br />
+                  &nbsp;&nbsp;embedding &lt;=&gt; &apos;[...]&apos; as distance<br />
                   FROM template_chunks<br />
-                  WHERE template_id = 'uuid-aqui'<br />
+                  WHERE template_id = &apos;uuid-aqui&apos;<br />
                   ORDER BY distance LIMIT 5;
                 </code>
               </div>

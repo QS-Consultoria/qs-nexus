@@ -18,6 +18,7 @@ export const PIPELINE_STEPS = [
     description: 'Arquivo enviado ao servidor',
     tooltip: 'O arquivo é enviado para o servidor e salvo no disco. Nesta etapa, validamos o tipo de arquivo, calculamos o hash SHA-256 para evitar duplicatas e criamos o registro inicial no banco de dados.',
     technicalDetails: 'O arquivo é salvo em public/uploads/{hash}-{nome} e um registro é criado na tabela documents com status "pending".',
+    estimatedTime: '1-2s',
   },
   {
     id: 2,

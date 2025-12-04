@@ -86,7 +86,7 @@ export function StepDetailsModal({
               {status === 'completed' && 'Concluído'}
               {status === 'failed' && 'Falhou'}
             </Badge>
-            {step.usesAI && (
+            {'usesAI' in step && step.usesAI && (
               <Badge variant="outline">Usa IA</Badge>
             )}
           </div>

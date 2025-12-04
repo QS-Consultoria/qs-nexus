@@ -207,16 +207,16 @@ export function PipelineVisualizer({
 
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{step.icon}</span>
-                        <h4 className="font-semibold">{step.name}</h4>
-                        {step.usesAI && (
-                          <Badge variant="secondary" className="text-xs">
-                            IA
-                          </Badge>
-                        )}
-                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{step.icon}</span>
+                          <h4 className="font-semibold">{step.name}</h4>
+                          {'usesAI' in step && step.usesAI && (
+                            <Badge variant="secondary" className="text-xs">
+                              IA
+                            </Badge>
+                          )}
+                        </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -239,7 +239,7 @@ export function PipelineVisualizer({
                     <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
 
                     {/* Tempo estimado */}
-                    {isActive && step.estimatedTime && (
+                    {isActive && 'estimatedTime' in step && step.estimatedTime && (
                       <p className="text-xs text-muted-foreground mt-2">
                         ⏱️ Tempo estimado: {step.estimatedTime}
                       </p>
