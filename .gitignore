@@ -84,9 +84,11 @@ dump.rdb
 data/
 uploads/
 
-# CSV e Excel files
+# CSV, Excel e ODS files
 *.csv
 *.xlsx
+*.xls
+*.ods
 
 # Screenshots e testes de browser
 .playwright-mcp/

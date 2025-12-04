@@ -253,19 +253,25 @@ export default function UploadPage() {
                 Importar SPED
               </CardTitle>
               <CardDescription>
-                Importe arquivos SPED (ECD, ECF, EFD) em formato TXT ou CSV para normalização e análise SQL
+                Importe arquivos SPED (ECD, ECF, EFD) em múltiplos formatos para normalização e análise SQL
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FileUpload
                 onFilesSelected={handleFilesSelected}
-                acceptedTypes={['.txt', '.csv', '.sped']}
+                acceptedTypes={['.txt', '.csv', '.xlsx', '.xls', '.ods', '.sped']}
                 maxFiles={5}
               />
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="outline">Suportados</Badge>
-                <span>ECD, ECF, EFD-ICMS/IPI, EFD-Contribuições (TXT ou CSV)</span>
+              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Tipos SPED</Badge>
+                  <span>ECD, ECF, EFD-ICMS/IPI, EFD-Contribuições</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Formatos</Badge>
+                  <span>TXT, CSV, Excel (.xlsx, .xls), LibreOffice (.ods)</span>
+                </div>
               </div>
 
               <Button

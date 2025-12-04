@@ -60,9 +60,11 @@ dump.rdb
 logs
 *.log
 
-# CSV/Excel
+# CSV/Excel/ODS
 *.csv
 *.xlsx
+*.xls
+*.ods
 
 # TypeScript
 *.tsbuildinfo

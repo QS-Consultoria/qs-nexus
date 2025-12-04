@@ -44,10 +44,11 @@ export async function POST(request: NextRequest) {
 
     for (const file of files) {
       try {
-        // Validar extensão (SPED são arquivos .txt ou .csv)
+        // Validar extensão (SPED aceita TXT, CSV, Excel e ODS)
         const ext = file.name.split('.').pop()?.toLowerCase()
-        if (ext !== 'txt' && ext !== 'csv') {
-          console.error(`File ${file.name} rejected: must be .txt or .csv`)
+        const validExtensions = ['txt', 'csv', 'xlsx', 'xls', 'ods', 'sped']
+        if (!validExtensions.includes(ext || '')) {
+          console.error(`File ${file.name} rejected: must be .txt, .csv, .xlsx, .xls, .ods or .sped`)
           continue
         }
 

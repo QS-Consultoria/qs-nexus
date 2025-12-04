@@ -31,9 +31,12 @@ export async function POST(request: NextRequest) {
 
     // Validar extensão
     const fileName = file.name.toLowerCase()
-    if (!fileName.endsWith('.txt') && !fileName.endsWith('.sped') && !fileName.endsWith('.csv')) {
+    const validExtensions = ['.txt', '.csv', '.xlsx', '.xls', '.ods', '.sped']
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext))
+    
+    if (!hasValidExtension) {
       return NextResponse.json(
-        { error: 'Formato inválido. Envie um arquivo .txt, .csv ou .sped' },
+        { error: 'Formato inválido. Envie um arquivo .txt, .csv, .xlsx, .xls, .ods ou .sped' },
         { status: 400 }
       )
     }
