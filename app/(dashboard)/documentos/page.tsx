@@ -178,7 +178,7 @@ export default function DocumentosPage() {
             Documentos
           </h1>
           <p className="text-muted-foreground">
-            Documentos gerais (PDF, Word, Texto) da organização
+            Gerencie documentos gerais (PDF, Word, Texto)
           </p>
         </div>
         <Button
@@ -196,7 +196,7 @@ export default function DocumentosPage() {
         <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
           <CardContent className="pt-6">
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              ⚠️ Selecione uma organização no menu lateral para visualizar e gerenciar documentos
+              ⚠️ Selecione uma organização no menu lateral para visualizar documentos
             </p>
           </CardContent>
         </Card>
@@ -230,7 +230,7 @@ export default function DocumentosPage() {
                 <div>
                   <CardTitle>Lista de Documentos</CardTitle>
                   <CardDescription>
-                    {stats.total} documento(s) na organização {currentOrg.name}
+                    {stats.total} documento(s) encontrado(s)
                   </CardDescription>
                 </div>
               </div>

@@ -6,9 +6,11 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useProcessStream } from '@/hooks/use-process-stream'
-import { FileText, CheckCircle, XCircle, Clock, AlertCircle, Eye } from 'lucide-react'
+import { FileText, CheckCircle, XCircle, Clock, AlertCircle, Eye, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Link from 'next/link'
+import { PipelineVisualizer } from '@/components/processing/pipeline-visualizer'
+import { StepDetailsModal } from '@/components/processing/step-details-modal'
 
 interface ProcessingProgressProps {
   jobId: string | null
@@ -42,6 +44,8 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
   const notifiedFilesRef = useRef<Set<string>>(new Set())
   const [fileIds, setFileIds] = useState<Record<string, string>>({})
   const fetchedFileIdsRef = useRef<Set<string>>(new Set())
+  const [showPipeline, setShowPipeline] = useState(true)
+  const [selectedStepId, setSelectedStepId] = useState<number | null>(null)
 
   // Notificar quando o job é concluído ou há erros
   useEffect(() => {
@@ -154,48 +158,86 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
   const completedCount = fileArray.filter((f: any) => f.status === 'completed').length
   const processingCount = fileArray.filter((f: any) => f.status === 'processing').length
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>
-            {jobComplete
-              ? failedCount > 0
-                ? 'Processamento Concluído com Erros'
-                : 'Processamento Concluído'
-              : 'Processamento em Andamento'}
-          </span>
-          {jobComplete && (
-            <Badge variant={failedCount > 0 ? 'destructive' : 'default'}>
-              {failedCount > 0 ? `${failedCount} falha(s)` : 'Sucesso'}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progresso Geral</span>
-            <span>{Math.round(totalProgress)}%</span>
-          </div>
-          <Progress value={totalProgress} />
-          {fileArray.length > 0 && (
-            <div className="flex gap-4 text-xs text-muted-foreground mt-2">
-              <span>✓ {completedCount} concluído(s)</span>
-              {processingCount > 0 && <span>⏳ {processingCount} processando</span>}
-              {failedCount > 0 && <span className="text-red-600">✗ {failedCount} rejeitado(s)</span>}
-            </div>
-          )}
-        </div>
+  // Pega informações do primeiro arquivo em processamento para mostrar no pipeline
+  const firstProcessingFile = fileArray.find((f: any) => f.status === 'processing')
+  const pipelineFile = firstProcessingFile || fileArray[0]
 
-        {error && (
-          <div className="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>
+              {jobComplete
+                ? failedCount > 0
+                  ? 'Processamento Concluído com Erros'
+                  : 'Processamento Concluído'
+                : 'Processamento em Andamento'}
+            </span>
+            {jobComplete && (
+              <Badge variant={failedCount > 0 ? 'destructive' : 'default'}>
+                {failedCount > 0 ? `${failedCount} falha(s)` : 'Sucesso'}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Pipeline Visual */}
+          {pipelineFile && (
+            <div className="space-y-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPipeline(!showPipeline)}
+                className="w-full justify-between"
+              >
+                <span className="text-sm font-medium">Pipeline de Processamento</span>
+                {showPipeline ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              
+              {showPipeline && (
+                <PipelineVisualizer
+                  currentStep={pipelineFile.currentStep || 1}
+                  totalSteps={pipelineFile.totalSteps || 7}
+                  status={pipelineFile.status}
+                  message={pipelineFile.message}
+                  error={pipelineFile.error}
+                  onStepClick={(stepId) => setSelectedStepId(stepId)}
+                  compact={false}
+                  showTechnicalDetails={false}
+                />
+              )}
             </div>
+          )}
+
+          {/* Progresso Geral */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progresso Geral</span>
+              <span>{Math.round(totalProgress)}%</span>
+            </div>
+            <Progress value={totalProgress} />
+            {fileArray.length > 0 && (
+              <div className="flex gap-4 text-xs text-muted-foreground mt-2">
+                <span>✓ {completedCount} concluído(s)</span>
+                {processingCount > 0 && <span>⏳ {processingCount} processando</span>}
+                {failedCount > 0 && <span className="text-red-600">✗ {failedCount} rejeitado(s)</span>}
+              </div>
+            )}
           </div>
-        )}
+
+          {error && (
+            <div className="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            </div>
+          )}
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {fileArray.length === 0 ? (
@@ -275,5 +317,24 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
         </div>
       </CardContent>
     </Card>
+
+      {/* Modal de Detalhes da Etapa */}
+      {selectedStepId && pipelineFile && (
+        <StepDetailsModal
+          open={selectedStepId !== null}
+          onOpenChange={(open) => !open && setSelectedStepId(null)}
+          stepId={selectedStepId}
+          status={pipelineFile.status}
+          error={pipelineFile.error}
+          metadata={{
+            wordsCount: pipelineFile.wordsCount,
+            chunksGenerated: pipelineFile.chunksGenerated,
+            tokensUsed: pipelineFile.tokensUsed,
+            modelUsed: pipelineFile.modelUsed,
+            processingTime: pipelineFile.processingTime,
+          }}
+        />
+      )}
+    </>
   )
 }

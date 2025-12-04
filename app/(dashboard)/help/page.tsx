@@ -21,8 +21,11 @@ import {
   LayoutDashboard,
   ChevronRight,
   CheckCircle2,
+  GitBranch,
 } from 'lucide-react'
 import Link from 'next/link'
+import { DataFlowDiagram } from '@/components/help/data-flow-diagram'
+import { GLOSSARY } from '@/lib/constants/processing-tooltips'
 
 export default function HelpPage() {
   return (
@@ -37,10 +40,14 @@ export default function HelpPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="processing" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            <span className="hidden sm:inline">Processamento</span>
           </TabsTrigger>
           <TabsTrigger value="features" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
@@ -243,6 +250,64 @@ export default function HelpPage() {
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   <span className="text-sm">Dashboard de Estatísticas</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Processing Tab */}
+        <TabsContent value="processing" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Fluxo de Processamento de Dados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-muted-foreground">
+                Entenda como seus documentos são processados desde o upload até ficarem disponíveis para busca semântica.
+              </p>
+              
+              <DataFlowDiagram type="general" />
+
+              <Separator />
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Glossário de Termos</h3>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {Object.entries(GLOSSARY).map(([key, term]) => (
+                    <Card key={key} className="bg-muted/50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">{term.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <p className="text-xs text-muted-foreground">{term.description}</p>
+                        {term.example && (
+                          <div className="bg-background p-2 rounded text-xs font-mono">
+                            {term.example}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Documentação Técnica</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Para desenvolvedores e administradores, documentação detalhada está disponível em:
+                </p>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <code className="bg-muted px-2 py-1 rounded text-xs">docs/FLUXO_DADOS_DETALHADO.md</code>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    <code className="bg-muted px-2 py-1 rounded text-xs">FLUXO_PROCESSAMENTO_DOCUMENTOS.md</code>
+                  </li>
+                </ul>
               </div>
             </CardContent>
           </Card>

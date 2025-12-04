@@ -12,10 +12,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Upload, X, FileIcon, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Upload, X, FileIcon, Loader2, Info, ChevronRight } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useOrganization } from '@/lib/contexts/organization-context'
 import { validateFileType, validateFileSize, formatFileSize } from '@/lib/utils/file-upload'
+import { DOCUMENT_TYPES, PIPELINE_STEPS } from '@/lib/constants/processing-tooltips'
 
 interface DocumentUploadDialogProps {
   open: boolean
@@ -42,6 +50,7 @@ export function DocumentUploadDialog({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [showPipelinePreview, setShowPipelinePreview] = useState(false)
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -185,22 +194,70 @@ export function DocumentUploadDialog({
         </DialogHeader>
 
         <div className="px-6 py-4 space-y-4">
-          {/* Organização atual */}
-          {currentOrg && (
-            <div className="rounded-md bg-blue-50 dark:bg-blue-950 p-3 border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                📁 Upload para: <strong>{currentOrg.name}</strong>
+          {/* Informações do tipo de upload */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 border border-blue-200 dark:border-blue-800">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  {documentType === 'sped' && 'SPED Contábil - Processamento Especializado'}
+                  {documentType === 'csv' && 'Planilhas CSV - Importação de Dados'}
+                  {documentType === 'general' && 'Documentos - Pipeline RAG Completo'}
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPipelinePreview(!showPipelinePreview)}
+                        className="h-7"
+                      >
+                        {showPipelinePreview ? 'Ocultar' : 'Ver'} Pipeline
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ver as etapas de processamento</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                {documentType === 'sped' && 'Extrai plano de contas, saldos e lançamentos contábeis'}
+                {documentType === 'csv' && 'Importa dados tabulares para o sistema'}
+                {documentType === 'general' && 'Converte para Markdown, classifica com IA e gera embeddings para busca semântica'}
               </p>
+              
+              {/* Preview do Pipeline */}
+              {showPipelinePreview && (
+                <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                    {PIPELINE_STEPS.slice(1, documentType === 'general' ? 8 : 4).map((step, index, arr) => (
+                      <div key={step.id} className="flex items-center shrink-0">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                <span className="text-sm">{step.icon}</span>
+                                <span className="text-xs font-medium whitespace-nowrap">{step.name}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="font-semibold text-sm">{step.name}</p>
+                              <p className="text-xs mt-1">{step.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        {index < arr.length - 1 && (
+                          <ChevronRight className="h-3 w-3 text-gray-400 mx-0.5" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          {!currentOrg && (
-            <div className="rounded-md bg-amber-50 dark:bg-amber-950 p-3 border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                ⚠️ Selecione uma organização no menu lateral primeiro
-              </p>
-            </div>
-          )}
+          </div>
 
           {/* Drag & Drop Area */}
           <div
@@ -239,6 +296,17 @@ export function DocumentUploadDialog({
               </p>
             </div>
           )}
+<<<<<<< Current (Your changes)
+=======
+          
+          {!currentOrg && (
+            <div className="rounded-md bg-amber-50 dark:bg-amber-950 p-3 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                ⚠️ Selecione uma organização no menu lateral para fazer upload
+              </p>
+            </div>
+          )}
+>>>>>>> Incoming (Background Agent changes)
 
           {/* Lista de arquivos selecionados */}
           {selectedFiles.length > 0 && (
@@ -247,30 +315,52 @@ export function DocumentUploadDialog({
                 Arquivos Selecionados ({selectedFiles.length})
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {selectedFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(file.size)}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveFile(index)}
-                      disabled={isUploading}
+                {selectedFiles.map((file, index) => {
+                  // Determinar tipo do arquivo
+                  const ext = file.name.split('.').pop()?.toLowerCase()
+                  const docType = Object.values(DOCUMENT_TYPES).find(dt => 
+                    dt.extensions.some(e => e.includes(ext || ''))
+                  )
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="shrink-0">
+                          {docType ? (
+                            <span className="text-2xl">{docType.icon}</span>
+                          ) : (
+                            <FileIcon className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                            {docType && (
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {docType.name}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatFileSize(file.size)}
+                            {docType && ` • ${docType.description.split(' ')[0]}`}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveFile(index)}
+                        disabled={isUploading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
