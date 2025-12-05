@@ -23,9 +23,11 @@ interface ECDDataTableProps {
   data: any[]
   anos: number[]
   tipo: 'BP' | 'DRE'
+  showAV?: boolean
+  showAH?: boolean
 }
 
-export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
+export function ECDDataTable({ data, anos, tipo, showAV = true, showAH = true }: ECDDataTableProps) {
   // Ordenar dados por código referencial
   const sortedData = [...data].sort((a, b) => {
     const refA = a.codCtaRef || ''
@@ -33,60 +35,125 @@ export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
     return refA.localeCompare(refB)
   })
 
+  // Identificar tipo de conta baseado no código referencial
+  const getAccountType = (codCtaRef: string): string => {
+    if (!codCtaRef) return 'indefinido'
+    const firstChar = codCtaRef.charAt(0)
+    
+    if (firstChar === '1') return 'ativo'
+    if (firstChar === '2') {
+      // Patrimônio Líquido geralmente começa com 2.03 ou 2.04
+      if (codCtaRef.startsWith('2.03') || codCtaRef.startsWith('2.04')) {
+        return 'patrimonio-liquido'
+      }
+      return 'passivo'
+    }
+    if (firstChar === '3') return 'resultado' // DRE
+    
+    return 'indefinido'
+  }
+
   // Obter nível e tipo da conta OFICIAL (do plano referencial RFB)
-  const getNivelETipo = (conta: any): { nivel: number; tipo: string; isOficial: boolean } => {
+  const getNivelETipo = (conta: any): { nivel: number; tipo: string; isOficial: boolean; accountType: string } => {
+    const codCtaRef = conta.codCtaRef || ''
+    const accountType = getAccountType(codCtaRef)
+    
     // Prioridade 1: Usar dados oficiais do plano referencial da RFB
     if (conta.nivelOficial && conta.tipoContaOficial) {
       return {
         nivel: conta.nivelOficial,
         tipo: conta.tipoContaOficial,
-        isOficial: true
+        isOficial: true,
+        accountType
       }
     }
     
     // Prioridade 2: Inferir pela profundidade do código (fallback para contas personalizadas)
-    const codCtaRef = conta.codCtaRef || ''
     const profundidade = (codCtaRef.match(/\./g) || []).length + 1
     
-    if (profundidade === 1) return { nivel: 1, tipo: 'sintética', isOficial: false }
-    if (profundidade === 2) return { nivel: 2, tipo: 'agregadora', isOficial: false }
-    if (profundidade === 3) return { nivel: 3, tipo: 'intermediária', isOficial: false }
-    if (profundidade === 4) return { nivel: 4, tipo: 'subgrupo', isOficial: false }
+    if (profundidade === 1) return { nivel: 1, tipo: 'sintética', isOficial: false, accountType }
+    if (profundidade === 2) return { nivel: 2, tipo: 'agregadora', isOficial: false, accountType }
+    if (profundidade === 3) return { nivel: 3, tipo: 'intermediária', isOficial: false, accountType }
+    if (profundidade === 4) return { nivel: 4, tipo: 'subgrupo', isOficial: false, accountType }
     
-    return { nivel: 5, tipo: 'analítica', isOficial: false }
+    return { nivel: 5, tipo: 'analítica', isOficial: false, accountType }
+  }
+  
+  // Nome amigável do tipo de conta
+  const getAccountTypeLabel = (accountType: string): string => {
+    const labels: Record<string, string> = {
+      'ativo': 'ATIVO',
+      'passivo': 'PASSIVO',
+      'patrimonio-liquido': 'PATRIMÔNIO LÍQUIDO',
+      'resultado': 'RESULTADO',
+      'indefinido': ''
+    }
+    return labels[accountType] || ''
   }
 
-  // Cor de fundo baseada no tipo de conta (design limpo)
-  const getRowStyle = (tipo: string, nivel: number) => {
-    const styles = {
-      'sintética': {
-        bg: 'bg-gradient-to-r from-blue-50 via-blue-50/80 to-transparent',
-        border: 'border-l-4 border-blue-500',
-        text: 'font-bold text-blue-900'
+  // Cor de fundo baseada no TIPO DE CONTA (Ativo/Passivo/PL/Resultado) e nível
+  const getRowStyle = (tipo: string, nivel: number, accountType: string) => {
+    // Cores base por tipo de conta
+    const baseColors: Record<string, { light: string; border: string; text: string }> = {
+      'ativo': {
+        light: 'blue',
+        border: 'border-blue',
+        text: 'text-blue'
       },
-      'agregadora': {
-        bg: 'bg-gradient-to-r from-indigo-50/60 via-indigo-50/40 to-transparent',
-        border: 'border-l-3 border-indigo-400',
-        text: 'font-semibold text-indigo-800'
+      'passivo': {
+        light: 'orange',
+        border: 'border-orange',
+        text: 'text-orange'
       },
-      'intermediária': {
-        bg: 'bg-gradient-to-r from-slate-50/40 via-slate-50/20 to-transparent',
-        border: 'border-l-2 border-slate-300',
-        text: 'font-medium text-slate-700'
+      'patrimonio-liquido': {
+        light: 'green',
+        border: 'border-green',
+        text: 'text-green'
       },
-      'subgrupo': {
-        bg: 'bg-gradient-to-r from-gray-50/30 to-transparent',
-        border: 'border-l border-gray-200',
-        text: 'text-gray-700'
+      'resultado': {
+        light: 'purple',
+        border: 'border-purple',
+        text: 'text-purple'
       },
-      'analítica': {
-        bg: '',
-        border: '',
-        text: 'text-gray-600'
+      'indefinido': {
+        light: 'gray',
+        border: 'border-gray',
+        text: 'text-gray'
       }
     }
     
-    return styles[tipo as keyof typeof styles] || styles['analítica']
+    const color = baseColors[accountType] || baseColors['indefinido']
+    
+    // Intensidade baseada no nível
+    const styles: Record<string, any> = {
+      'sintética': {
+        bg: `bg-gradient-to-r from-${color.light}-100 via-${color.light}-50/80 to-transparent`,
+        border: `border-l-4 ${color.border}-600`,
+        text: `font-bold ${color.text}-900`
+      },
+      'agregadora': {
+        bg: `bg-gradient-to-r from-${color.light}-50/70 via-${color.light}-50/40 to-transparent`,
+        border: `border-l-3 ${color.border}-500`,
+        text: `font-semibold ${color.text}-800`
+      },
+      'intermediária': {
+        bg: `bg-gradient-to-r from-${color.light}-50/50 via-${color.light}-50/20 to-transparent`,
+        border: `border-l-2 ${color.border}-400`,
+        text: `font-medium ${color.text}-700`
+      },
+      'subgrupo': {
+        bg: `bg-gradient-to-r from-${color.light}-50/30 to-transparent`,
+        border: `border-l ${color.border}-300`,
+        text: `${color.text}-700`
+      },
+      'analítica': {
+        bg: `bg-${color.light}-50/10`,
+        border: '',
+        text: `${color.text}-600`
+      }
+    }
+    
+    return styles[tipo] || styles['analítica']
   }
 
   // Formatar número como moeda
@@ -180,13 +247,15 @@ export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
                 </TableHead>
                 
                 {/* Coluna AV para esse ano */}
-                <TableHead className="text-right min-w-[100px] bg-purple-50/30">
-                  <div className="text-xs font-medium">AV %</div>
-                  <div className="text-[10px] text-muted-foreground">{ano}</div>
-                </TableHead>
+                {showAV && (
+                  <TableHead className="text-right min-w-[100px] bg-purple-50/30">
+                    <div className="text-xs font-medium">AV %</div>
+                    <div className="text-[10px] text-muted-foreground">{ano}</div>
+                  </TableHead>
+                )}
                 
                 {/* Coluna AH (se não for o primeiro ano) */}
-                {anosIdx > 0 && (
+                {showAH && anosIdx > 0 && (
                   <TableHead className="text-right min-w-[110px] bg-amber-50/30">
                     <div className="text-xs font-medium">AH %</div>
                     <div className="text-[10px] text-muted-foreground">{anos[anosIdx - 1]}/{ano}</div>
@@ -205,9 +274,10 @@ export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
             </TableRow>
           ) : (
             sortedData.map((conta, idx) => {
-              // Obter nível e tipo OFICIAL do plano referencial
-              const { nivel, tipo, isOficial } = getNivelETipo(conta)
-              const styles = getRowStyle(tipo, nivel)
+              // Obter nível, tipo e classificação da conta
+              const { nivel, tipo, isOficial, accountType } = getNivelETipo(conta)
+              const styles = getRowStyle(tipo, nivel, accountType)
+              const accountTypeLabel = getAccountTypeLabel(accountType)
               
               return (
                 <TableRow 
@@ -235,8 +305,19 @@ export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
                           </span>
                         )}
                       </div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
+                      <div className="font-mono text-[10px] text-muted-foreground flex items-center gap-1">
                         {conta.codCtaRef}
+                        {accountTypeLabel && nivel === 1 && (
+                          <span className={cn(
+                            "inline-flex items-center justify-center px-1.5 py-0.5 text-[8px] rounded font-bold uppercase",
+                            accountType === 'ativo' && "bg-blue-600 text-white",
+                            accountType === 'passivo' && "bg-orange-600 text-white",
+                            accountType === 'patrimonio-liquido' && "bg-green-600 text-white",
+                            accountType === 'resultado' && "bg-purple-600 text-white"
+                          )}>
+                            {accountTypeLabel}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -280,17 +361,19 @@ export function ECDDataTable({ data, anos, tipo }: ECDDataTableProps) {
                         </TableCell>
                         
                         {/* Coluna AV */}
-                        <TableCell className="text-right bg-purple-50/10">
-                          <div className="space-y-0.5">
-                            <div className="tabular-nums text-[11px] text-purple-700 font-medium">
-                              {formatPercentage(avPerc)}
+                        {showAV && (
+                          <TableCell className="text-right bg-purple-50/10">
+                            <div className="space-y-0.5">
+                              <div className="tabular-nums text-[11px] text-purple-700 font-medium">
+                                {formatPercentage(avPerc)}
+                              </div>
+                              <VariationBar value={avPerc} maxValue={1} />
                             </div>
-                            <VariationBar value={avPerc} maxValue={1} />
-                          </div>
-                        </TableCell>
+                          </TableCell>
+                        )}
                         
                         {/* Coluna AH (se não for o primeiro ano) */}
-                        {anosIdx > 0 && (
+                        {showAH && anosIdx > 0 && (
                           <TableCell className="text-right bg-amber-50/10">
                             <div className="space-y-0.5">
                               <div className="flex items-center justify-end gap-0.5">

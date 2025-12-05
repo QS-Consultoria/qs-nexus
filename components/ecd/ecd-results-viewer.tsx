@@ -30,6 +30,21 @@ export function ECDResultsViewer({ spedFileId, bp, dre, metadata }: ECDResultsVi
   const [searchTerm, setSearchTerm] = useState('')
   const [showOnlyWithMovement, setShowOnlyWithMovement] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  
+  // Controles de visibilidade de colunas
+  const [visibleYears, setVisibleYears] = useState<Set<number>>(new Set(metadata.anos))
+  const [showAV, setShowAV] = useState(true)
+  const [showAH, setShowAH] = useState(true)
+  
+  const toggleYear = (year: number) => {
+    const newSet = new Set(visibleYears)
+    if (newSet.has(year)) {
+      newSet.delete(year)
+    } else {
+      newSet.add(year)
+    }
+    setVisibleYears(newSet)
+  }
 
   const handleDownloadBP = async () => {
     try {
@@ -176,23 +191,28 @@ export function ECDResultsViewer({ spedFileId, bp, dre, metadata }: ECDResultsVi
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Filtros e Controles */}
         {showFilters && (
           <div className="rounded-lg border p-4 bg-muted/20 space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-sm">Filtros</h4>
+              <h4 className="font-medium text-sm">Filtros e Visualização</h4>
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => {
                   setSearchTerm('')
                   setShowOnlyWithMovement(false)
+                  setVisibleYears(new Set(metadata.anos))
+                  setShowAV(true)
+                  setShowAH(true)
                 }}
               >
                 <X className="h-4 w-4 mr-1" />
-                Limpar
+                Resetar
               </Button>
             </div>
+            
+            {/* Filtros de Busca */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="search">Buscar por código ou descrição</Label>
@@ -216,6 +236,53 @@ export function ECDResultsViewer({ spedFileId, bp, dre, metadata }: ECDResultsVi
                   />
                   <Label htmlFor="movement" className="cursor-pointer">
                     Apenas contas com movimento
+                  </Label>
+                </div>
+              </div>
+            </div>
+            
+            {/* Controles de Colunas */}
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-sm font-medium">Colunas Visíveis:</Label>
+              
+              {/* Anos */}
+              <div className="space-y-2">
+                <div className="text-xs text-muted-foreground">Anos:</div>
+                <div className="flex flex-wrap gap-2">
+                  {metadata.anos.map(ano => (
+                    <Button
+                      key={ano}
+                      variant={visibleYears.has(ano) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleYear(ano)}
+                      className="h-7 px-3 text-xs"
+                    >
+                      {ano}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Métricas */}
+              <div className="flex gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-av"
+                    checked={showAV}
+                    onCheckedChange={setShowAV}
+                  />
+                  <Label htmlFor="show-av" className="cursor-pointer text-xs">
+                    Análise Vertical (AV %)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-ah"
+                    checked={showAH}
+                    onCheckedChange={setShowAH}
+                  />
+                  <Label htmlFor="show-ah" className="cursor-pointer text-xs">
+                    Análise Horizontal (AH %)
                   </Label>
                 </div>
               </div>
@@ -247,8 +314,10 @@ export function ECDResultsViewer({ spedFileId, bp, dre, metadata }: ECDResultsVi
           
           <ECDDataTable
             data={filteredBP}
-            anos={metadata.anos}
+            anos={Array.from(visibleYears).sort()}
             tipo="BP"
+            showAV={showAV}
+            showAH={showAH}
           />
         </TabsContent>
 
@@ -280,15 +349,45 @@ export function ECDResultsViewer({ spedFileId, bp, dre, metadata }: ECDResultsVi
           
           <ECDDataTable
             data={filteredDRE}
-            anos={metadata.anos}
+            anos={Array.from(visibleYears).sort()}
             tipo="DRE"
+            showAV={showAV}
+            showAH={showAH}
           />
         </TabsContent>
       </Tabs>
 
       {/* Legenda */}
-      <div className="rounded-lg border p-4 bg-muted/20 space-y-3">
+      <div className="rounded-lg border p-4 bg-muted/20 space-y-4">
         <h4 className="font-medium mb-2 text-sm">Legenda:</h4>
+        
+        {/* Cores por Tipo de Conta */}
+        <div className="border-b pb-3">
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            Cores por Tipo de Conta:
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-600"></div>
+              <span className="font-medium">ATIVO</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-r from-orange-100 to-orange-50 border-2 border-orange-600"></div>
+              <span className="font-medium">PASSIVO</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-r from-green-100 to-green-50 border-2 border-green-600"></div>
+              <span className="font-medium">PATRIMÔNIO LÍQUIDO</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gradient-to-r from-purple-100 to-purple-50 border-2 border-purple-600"></div>
+              <span className="font-medium">RESULTADO (DRE)</span>
+            </div>
+          </div>
+          <div className="mt-2 text-[10px] text-muted-foreground italic">
+            💡 A intensidade da cor diminui conforme o nível hierárquico (sintética → analítica)
+          </div>
+        </div>
         
         {/* Variações */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
