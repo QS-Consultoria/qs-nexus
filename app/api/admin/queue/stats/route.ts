@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/config'
 import { spedQueue } from '@/lib/queue/sped-queue'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/queue/stats
  * Retorna estatísticas da fila de processamento SPED

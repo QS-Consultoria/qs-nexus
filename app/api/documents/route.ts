@@ -3,8 +3,8 @@ import { db } from '@/lib/db/index'
 import { documentFiles, templates } from '@/lib/db/schema/rag'
 import { eq, desc, asc, and, or, ilike, sql, gte, lte } from 'drizzle-orm'
 
-// Cache por 10 segundos (listagem muda frequentemente)
-export const revalidate = 10
+// Forçar rota dinâmica
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {

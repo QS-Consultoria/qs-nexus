@@ -3,6 +3,8 @@ import { db } from '@/lib/db'
 import { documentFiles } from '@/lib/db/schema/rag'
 import { sql, eq, count, and, gte, lte, ilike } from 'drizzle-orm'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

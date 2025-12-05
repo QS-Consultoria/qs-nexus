@@ -6,6 +6,8 @@ import { organizationMembers } from '@/lib/db/schema/organizations'
 import { eq, and, sql } from 'drizzle-orm'
 import { hasPermission } from '@/lib/auth/permissions'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/users/stats
  * Retorna estatísticas de usuários

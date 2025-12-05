@@ -3,6 +3,9 @@ import { db } from '@/lib/db'
 import { spedFiles, chartOfAccounts, journalEntries } from '@/lib/db/schema/sped'
 import { sql, eq, count, and, gte, lte, ilike } from 'drizzle-orm'
 
+// Forçar rota dinâmica (usa searchParams)
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

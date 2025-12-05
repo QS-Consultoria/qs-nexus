@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth/config'
 import { getUsageStats } from '@/lib/services/ai-guardrails'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET: Obter estatísticas de uso da OpenAI
  */

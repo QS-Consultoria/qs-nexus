@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { loadTemplateSchemaConfig } from '@/lib/services/template-schema-service'
 import { generateSchemaPrompt } from '@/lib/services/schema-prompt-generator'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/template-schema/prompt-preview
  * Retorna o preview do prompt gerado a partir do schema de template
